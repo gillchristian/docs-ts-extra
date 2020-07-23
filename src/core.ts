@@ -7,9 +7,11 @@ import * as E from 'fp-ts/lib/Either'
 import { fold } from 'fp-ts/lib/Monoid'
 import { pipe } from 'fp-ts/lib/pipeable'
 import * as R from 'fp-ts/lib/Reader'
+import * as O from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as path from 'path'
+
 import { Documentable, Module } from './domain'
 import * as markdown from './markdown'
 import * as P from './parser'
@@ -156,11 +158,15 @@ function getExampleFiles(modules: Array<Module>): Array<File> {
   return A.array.chain(modules, module => {
     const prefix = module.path.join('-')
     function getDocumentableExamples(documentable: Documentable): Array<File> {
+      // HERE: .ts extension should also support .tsx
       return documentable.examples.map((content, i) =>
         file(path.join(outDir, 'examples', prefix + '-' + documentable.name + '-' + i + '.ts'), content + '\n', true)
       )
     }
-    const moduleExamples = getDocumentableExamples(module)
+    const moduleExamples = pipe(
+      module.documentation,
+      O.fold(() => [], getDocumentableExamples)
+    )
     const methods = A.array.chain(module.classes, c =>
       foldFiles([
         A.array.chain(c.methods, getDocumentableExamples),
@@ -181,6 +187,8 @@ function addAssertImport(code: string): string {
 }
 
 function handleImports(files: Array<File>, projectName: string): Array<File> {
+  // HERE: why treat src/lib differently ???
+  // HERE: this should be configurable (the src)
   function replaceProjectName(source: string): string {
     // Matches imports of the form:
     // import { foo } from 'projectName'

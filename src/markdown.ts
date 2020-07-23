@@ -10,6 +10,7 @@ import { Class, Function, Interface, Method, TypeAlias, Constant, Module, Export
 import { pipe } from 'fp-ts/lib/pipeable'
 import * as NEA from 'fp-ts/lib/NonEmptyArray'
 import * as R from 'fp-ts/lib/Record'
+// HERE why require ?
 const toc = require('markdown-toc')
 
 const CRLF = '\n\n'
@@ -17,6 +18,7 @@ const h1 = (title: string) => `# ${title}`
 const h2 = (title: string) => `## ${title}`
 const h3 = (title: string) => `### ${title}`
 const fence = (language: string) => (code: string): string => '```' + language + '\n' + code + '\n' + '```'
+// HERE suport tsx as well
 const ts = fence('ts')
 const bold = (code: string) => '**' + code + '**'
 const strike = (text: string) => '~~' + text + '~~'
@@ -164,19 +166,28 @@ function printDescription(description: O.Option<string>): string {
 }
 
 function printModuleDescription(m: Module): string {
-  let s = h2(handleTitle(m.name, m.deprecated) + ' overview')
-  s += CRLF
-  s += printDescription(m.description)
-  s += printExamples(m.examples)
-  s += printSince(m.since)
-  s += CRLF
-  return s
+  return pipe(
+    m.documentation,
+    O.fold(
+      () => h2(handleTitle(m.name, false) + ' overview') + CRLF,
+      doc => {
+        let s = h2(handleTitle(m.name, doc.deprecated) + ' overview')
+        s += CRLF
+        s += printDescription(doc.description)
+        s += printExamples(doc.examples)
+        s += printSince(doc.since)
+        s += CRLF
+        return s
+      }
+    )
+  )
 }
 
 /**
  * @since 0.2.0
  */
 export function printExamples(examples: Array<string>): string {
+  // HERE use tsx or ts fence
   if (examples.length === 0) {
     return ''
   }
