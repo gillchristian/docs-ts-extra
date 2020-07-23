@@ -674,15 +674,22 @@ export const a: number = 1
     )
     assert.deepStrictEqual(
       P.parseModuleDocumentation({ ...testEnv, sourceFile }),
-      right({
-        name: 'test',
-        description: O.some('Manages the configuration settings for the widget'),
-        deprecated: true,
-        since: '1.0.0',
-        examples: [],
-        category: O.none
-      })
+      right([
+        'test',
+        O.some({
+          name: 'test',
+          description: O.some('Manages the configuration settings for the widget'),
+          deprecated: true,
+          since: '1.0.0',
+          examples: [],
+          category: O.none
+        })
+      ])
     )
+  })
+  it('should return no documentation if module has JSDocs', () => {
+    const sourceFile = getTestSourceFile('export const a: number = 1')
+    assert.deepStrictEqual(P.parseModuleDocumentation({ ...testEnv, sourceFile }), right(['test', O.none]))
   })
 })
 

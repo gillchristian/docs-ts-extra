@@ -38,6 +38,8 @@ Added in v0.5.0
   - [Module (interface)](#module-interface)
   - [Property (interface)](#property-interface)
   - [TypeAlias (interface)](#typealias-interface)
+- [utils](#utils)
+  - [isModuleNotDeprecated](#ismodulenotdeprecated)
 
 ---
 
@@ -142,7 +144,8 @@ Added in v0.5.0
 
 ```ts
 export declare function makeModule(
-  documentable: Documentable,
+  name: string,
+  documentable: O.Option<Documentable>,
   path: Array<string>,
   interfaces: Array<Interface>,
   typeAliases: Array<TypeAlias>,
@@ -301,7 +304,9 @@ Added in v0.5.0
 **Signature**
 
 ```ts
-export interface Module extends Documentable {
+export interface Module {
+  readonly name: string
+  readonly documentation: O.Option<Documentable>
   readonly path: Array<string>
   readonly interfaces: Array<Interface>
   readonly typeAliases: Array<TypeAlias>
@@ -338,3 +343,17 @@ export interface TypeAlias extends Documentable {
 ```
 
 Added in v0.5.0
+
+# utils
+
+## isModuleNotDeprecated
+
+A module without documentation is considered not deprecated
+
+**Signature**
+
+```ts
+export declare const isModuleNotDeprecated: (module: Module) => boolean
+```
+
+Added in v0.6.0

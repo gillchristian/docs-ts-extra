@@ -509,12 +509,14 @@ function getModuleName(path: Array<string>): string {
   return P.parse(path[path.length - 1]).name
 }
 
+type ModuleTuple = [string, O.Option<D.Documentable>]
+
 /**
  * @internal
  */
-export const parseModuleDocumentation: Parser<D.Documentable> = env => {
+export const parseModuleDocumentation: Parser<ModuleTuple> = env => {
   const name = getModuleName(env.path)
-  const onMissingDocumentation = () => E.left(`missing documentation in ${env.path.join('/')} module`)
+  const onMissingDocumentation = () => E.right([name, O.none] as ModuleTuple)
   return pipe(
     env.sourceFile.getStatements(),
     A.foldLeft(onMissingDocumentation, statement =>
@@ -526,9 +528,19 @@ export const parseModuleDocumentation: Parser<D.Documentable> = env => {
             E.fold(
               () => E.left(`missing @since tag in ${env.path.join('/')} module documentation`),
               info =>
-                E.right(
-                  D.makeDocumentable(name, info.description, info.since, info.deprecated, info.examples, info.category)
-                )
+                E.right([
+                  name,
+                  O.some(
+                    D.makeDocumentable(
+                      name,
+                      info.description,
+                      info.since,
+                      info.deprecated,
+                      info.examples,
+                      info.category
+                    )
+                  )
+                ])
             )
           )
         )
@@ -554,7 +566,8 @@ export const parseModule: Parser<D.Module> = pipe(
   RE.chain(items => env =>
     E.right(
       D.makeModule(
-        items.documentation,
+        items.documentation[0],
+        items.documentation[1],
         env.path,
         items.interfaces,
         items.typeAliases,
@@ -593,11 +606,6 @@ export function parseFiles(files: Array<File>): E.Either<string, Array<D.Module>
   const traverse = A.array.traverse(E.getValidation(semigroupError))
   return pipe(
     traverse(files, parseFile(createProject(files))),
-    E.map(
-      flow(
-        A.filter(module => !module.deprecated),
-        sortModules
-      )
-    )
+    E.map(flow(A.filter(D.isModuleNotDeprecated), sortModules))
   )
 }

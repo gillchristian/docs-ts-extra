@@ -105,7 +105,9 @@ export interface Export extends Documentable {
  * @category model
  * @since 0.5.0
  */
-export interface Module extends Documentable {
+export interface Module {
+  readonly name: string
+  readonly documentation: O.Option<Documentable>
   readonly path: Array<string>
   readonly interfaces: Array<Interface>
   readonly typeAliases: Array<TypeAlias>
@@ -215,7 +217,8 @@ export function makeExport(documentable: Documentable, signature: string): Expor
  * @since 0.5.0
  */
 export function makeModule(
-  documentable: Documentable,
+  name: string,
+  documentable: O.Option<Documentable>,
   path: Array<string>,
   interfaces: Array<Interface>,
   typeAliases: Array<TypeAlias>,
@@ -224,7 +227,7 @@ export function makeModule(
   constants: Array<Constant>,
   exports: Array<Export>
 ): Module {
-  return { path, interfaces, typeAliases, functions, classes, constants, exports, ...documentable }
+  return { name, path, interfaces, typeAliases, functions, classes, constants, exports, documentation: documentable }
 }
 
 // -------------------------------------------------------------------------------------
@@ -239,3 +242,23 @@ export const ordModule: Ord<Module> = pipe(
   ordString,
   contramap((module: Module) => module.path.join('/').toLowerCase())
 )
+
+// -------------------------------------------------------------------------------------
+// utils
+// -------------------------------------------------------------------------------------
+
+// TODO: better name :)
+/**
+ * A module without documentation is considered not deprecated
+ *
+ * @category utils
+ * @since 0.6.0
+ */
+export const isModuleNotDeprecated = (module: Module) =>
+  pipe(
+    module.documentation,
+    O.fold(
+      () => true,
+      doc => !doc.deprecated
+    )
+  )
