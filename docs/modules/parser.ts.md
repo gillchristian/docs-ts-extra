@@ -1,6 +1,6 @@
 ---
 title: parser.ts
-nav_order: 6
+nav_order: 7
 parent: Modules
 ---
 
@@ -39,6 +39,7 @@ Added in v0.2.0
 
 ```ts
 export interface Env {
+  config: config.Config
   path: Array<string>
   sourceFile: ast.SourceFile
 }
@@ -148,7 +149,7 @@ Added in v0.2.0
 **Signature**
 
 ```ts
-export declare function parseFiles(files: Array<File>): E.Either<string, Array<D.Module>>
+export declare function parseFiles(config: config.Config, files: Array<File>): E.Either<string, Array<D.Module>>
 ```
 
 Added in v0.5.0

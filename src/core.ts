@@ -11,10 +11,12 @@ import * as O from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as path from 'path'
+import { formatValidationErrors } from 'io-ts-reporters'
 
 import { Documentable, Module } from './domain'
 import * as markdown from './markdown'
 import * as P from './parser'
+import * as config from './config'
 
 /**
  * capabilities
@@ -44,9 +46,16 @@ export interface MonadLog {
 }
 
 /**
+ * @since 0.3.0
+ */
+export interface ConfigCtx {
+  readonly config: config.Config
+}
+
+/**
  * @since 0.2.0
  */
-export interface Capabilities extends MonadFileSystem, MonadLog {}
+export interface Capabilities extends MonadFileSystem, MonadLog, ConfigCtx {}
 
 /**
  * App effect
@@ -61,6 +70,7 @@ const srcDir = 'src'
 interface PackageJSON {
   readonly name: string
   readonly homepage?: string
+  readonly docsts: unknown
 }
 
 interface File {
@@ -123,15 +133,31 @@ const getPackageJSON: Effect<PackageJSON> = C =>
     TE.chain(s => {
       const json = JSON.parse(s)
       const name = json.name
+
       return pipe(
         C.debug(`Project name detected: ${name}`),
         TE.map(() => ({
           name,
-          homepage: json.homepage
+          homepage: json.homepage,
+          docsts: json.docsts
         }))
       )
     })
   )
+
+// TODO: merge default config with provided one
+function validateConfigJSON(pkg: PackageJSON): Effect<[config.Config, PackageJSON]> {
+  return C =>
+    pipe(
+      pkg.docsts || {},
+      config.PartialConfig.decode,
+      TE.fromEither,
+      TE.mapLeft(formatValidationErrors),
+      TE.mapLeft(errors => 'Failed to decode "docsts" config:\n' + errors.join('\n')),
+      TE.map(validConfig => config.merge(validConfig, C.config)),
+      TE.map(config => [config, pkg])
+    )
+}
 
 const srcPattern = path.join(srcDir, '**', '*.ts')
 
@@ -148,7 +174,7 @@ function parseFiles(files: Array<File>): Effect<Array<Module>> {
   return C =>
     pipe(
       C.log('Parsing files...'),
-      TE.chain(() => TE.fromEither(pipe(P.parseFiles(files))))
+      TE.chain(() => TE.fromEither(pipe(P.parseFiles(C.config, files))))
     )
 }
 
@@ -340,7 +366,8 @@ function checkHomepage(pkg: PackageJSON): E.Either<string, string> {
  */
 export const main: Effect<void> = pipe(
   getPackageJSON,
-  RTE.chain(pkg =>
+  RTE.chain(validateConfigJSON),
+  RTE.chain(([config, pkg]) => C =>
     pipe(
       RTE.fromEither(checkHomepage(pkg)),
       RTE.chain(homepage =>
@@ -352,6 +379,7 @@ export const main: Effect<void> = pipe(
           RTE.chain(writeMarkdownFiles)
         )
       )
-    )
+    // TODO !!! Find a way to modify the context without this hack (?)
+    )({ ...C, config })
   )
 )
