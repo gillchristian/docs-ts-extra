@@ -1,6 +1,6 @@
 ---
 title: core.ts
-nav_order: 2
+nav_order: 3
 parent: Modules
 ---
 
@@ -14,6 +14,7 @@ Added in v0.2.0
 
 - [utils](#utils)
   - [Capabilities (interface)](#capabilities-interface)
+  - [ConfigCtx (interface)](#configctx-interface)
   - [Eff (interface)](#eff-interface)
   - [Effect (interface)](#effect-interface)
   - [MonadFileSystem (interface)](#monadfilesystem-interface)
@@ -29,10 +30,22 @@ Added in v0.2.0
 **Signature**
 
 ```ts
-export interface Capabilities extends MonadFileSystem, MonadLog {}
+export interface Capabilities extends MonadFileSystem, MonadLog, ConfigCtx {}
 ```
 
 Added in v0.2.0
+
+## ConfigCtx (interface)
+
+**Signature**
+
+```ts
+export interface ConfigCtx {
+  readonly config: config.Config
+}
+```
+
+Added in v0.3.0
 
 ## Eff (interface)
 

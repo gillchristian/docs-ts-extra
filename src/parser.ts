@@ -18,7 +18,9 @@ import * as R from 'fp-ts/lib/Record'
 import * as Semigroup from 'fp-ts/lib/Semigroup'
 import * as P from 'path'
 import * as ast from 'ts-morph'
+
 import * as D from './domain'
+import * as config from './config'
 
 // -------------------------------------------------------------------------------------
 // model
@@ -29,6 +31,7 @@ import * as D from './domain'
  * @since 0.5.0
  */
 export interface Env {
+  config: config.Config
   path: Array<string>
   sourceFile: ast.SourceFile
 }
@@ -516,7 +519,11 @@ type ModuleTuple = [string, O.Option<D.Documentable>]
  */
 export const parseModuleDocumentation: Parser<ModuleTuple> = env => {
   const name = getModuleName(env.path)
-  const onMissingDocumentation = () => E.right([name, O.none] as ModuleTuple)
+  const onMissingDocumentation = () =>
+    env.config.strict
+      ? E.left(`missing documentation in ${env.path.join('/')} module`)
+      : E.right([name, O.none] as ModuleTuple)
+
   return pipe(
     env.sourceFile.getStatements(),
     A.foldLeft(onMissingDocumentation, statement =>
@@ -580,11 +587,12 @@ export const parseModule: Parser<D.Module> = pipe(
   )
 )
 
-function parseFile(project: ast.Project): (file: File) => E.Either<string, D.Module> {
+function parseFile(config: config.Config, project: ast.Project): (file: File) => E.Either<string, D.Module> {
   return file => {
     const sourceFile = project.getSourceFile(file.path)!
     const path = file.path.split(P.sep)
     return parseModule({
+      config,
       path,
       sourceFile
     })
@@ -602,10 +610,10 @@ function createProject(files: Array<File>): ast.Project {
 /**
  * @since 0.5.0
  */
-export function parseFiles(files: Array<File>): E.Either<string, Array<D.Module>> {
+export function parseFiles(config: config.Config, files: Array<File>): E.Either<string, Array<D.Module>> {
   const traverse = A.array.traverse(E.getValidation(semigroupError))
   return pipe(
-    traverse(files, parseFile(createProject(files))),
+    traverse(files, parseFile(config, createProject(files))),
     E.map(flow(A.filter(D.isModuleNotDeprecated), sortModules))
   )
 }

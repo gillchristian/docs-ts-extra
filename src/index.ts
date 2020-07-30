@@ -11,6 +11,7 @@ import * as fs from 'fs-extra'
 import * as glob from 'glob'
 import * as rimraf from 'rimraf'
 import * as core from './core'
+import * as config from './config'
 
 const capabilities: core.Capabilities = {
   ...TE.taskEither,
@@ -21,7 +22,8 @@ const capabilities: core.Capabilities = {
   clean: (pattern: string) => TE.rightIO(() => rimraf.sync(pattern)),
   info: (message: string) => TE.rightIO(log(chalk.bold.magenta(message))),
   log: (message: string) => TE.rightIO(log(chalk.cyan(message))),
-  debug: (message: string) => TE.rightIO(log(chalk.gray(message)))
+  debug: (message: string) => TE.rightIO(log(chalk.gray(message))),
+  config: config.defaultConfig
 }
 
 const exit = (code: 0 | 1): IO.IO<void> => () => process.exit(code)
