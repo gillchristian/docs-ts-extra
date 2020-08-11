@@ -6,8 +6,6 @@ parent: Modules
 
 ## config overview
 
-Added in v0.3.0
-
 ---
 
 <h2 class="text-delta">Table of contents</h2>
@@ -30,20 +28,22 @@ Added in v0.3.0
 ```ts
 export interface Config {
   strict: boolean
+  outDir: string
+  rootDir: string
 }
 ```
 
-Added in v0.3.0
+Added in v0.6.0
 
 ## PartialConfig
 
 **Signature**
 
 ```ts
-export declare const PartialConfig: t.PartialC<{ strict: t.BooleanC }>
+export declare const PartialConfig: t.PartialC<{ strict: t.BooleanC; outDir: t.StringC; rootDir: t.StringC }>
 ```
 
-Added in v0.3.0
+Added in v0.6.0
 
 ## PartialConfig (interface)
 
@@ -53,7 +53,7 @@ Added in v0.3.0
 export interface PartialConfig extends t.TypeOf<typeof PartialConfig> {}
 ```
 
-Added in v0.3.0
+Added in v0.6.0
 
 ## defaultConfig
 
@@ -63,7 +63,7 @@ Added in v0.3.0
 export declare const defaultConfig: Config
 ```
 
-Added in v0.3.0
+Added in v0.6.0
 
 ## merge
 
@@ -73,4 +73,4 @@ Added in v0.3.0
 export declare const merge: (partial: PartialConfig, config: Config) => Config
 ```
 
-Added in v0.3.0
+Added in v0.6.0

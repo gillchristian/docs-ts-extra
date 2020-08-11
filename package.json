@@ -23,14 +23,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gcanti/docs-ts.git"
+    "url": "https://github.com/gillchristian/docs-ts.git"
   },
-  "author": "Giulio Canti <giulio.canti@gmail.com>",
+  "author": "Christian Gill <gillchristiang@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gcanti/docs-ts/issues"
+    "url": "https://github.com/gillchristian/docs-ts/issues"
   },
-  "homepage": "https://github.com/gcanti/docs-ts",
+  "homepage": "https://github.com/gillchristian/docs-ts",
   "dependencies": {
     "chalk": "^2.4.2",
     "doctrine": "^3.0.0",
@@ -67,6 +67,8 @@
   "tags": [],
   "keywords": [],
   "docsts": {
-    "strict": true
+    "strict": false,
+    "outDir": "docs",
+    "rootDir": "src"
   }
 }

@@ -1,6 +1,7 @@
 /**
  * @since 0.2.0
  */
+import * as path from 'path'
 import { spawnSync } from 'child_process'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
@@ -10,8 +11,6 @@ import * as R from 'fp-ts/lib/Reader'
 import * as O from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
-import * as path from 'path'
-import { formatValidationErrors } from 'io-ts-reporters'
 
 import { Documentable, Module } from './domain'
 import * as markdown from './markdown'
@@ -46,32 +45,36 @@ export interface MonadLog {
 }
 
 /**
- * @since 0.3.0
+ * @since 0.6.0
  */
-export interface ConfigCtx {
+export interface Env {
+  readonly name: string
+  readonly homepage: string
   readonly config: config.Config
 }
 
 /**
  * @since 0.2.0
  */
-export interface Capabilities extends MonadFileSystem, MonadLog, ConfigCtx {}
+export interface Capabilities extends MonadFileSystem, MonadLog {}
+
+/**
+ * @since 0.6.0
+ */
+export interface Context {
+  readonly C: Capabilities
+  readonly Env: Env
+}
 
 /**
  * App effect
  *
  * @since 0.2.0
  */
-export interface Effect<A> extends RTE.ReaderTaskEither<Capabilities, string, A> {}
+export interface Effect<A> extends RTE.ReaderTaskEither<Context, string, A> {}
 
 const outDir = 'docs'
 const srcDir = 'src'
-
-interface PackageJSON {
-  readonly name: string
-  readonly homepage?: string
-  readonly docsts: unknown
-}
 
 interface File {
   readonly path: string
@@ -88,7 +91,7 @@ function file(path: string, content: string, overwrite: boolean): File {
 }
 
 function readFile(path: string): Effect<File> {
-  return C =>
+  return ({ C }) =>
     pipe(
       C.readFile(path),
       TE.map(content => file(path, content, false))
@@ -100,7 +103,7 @@ function readFiles(paths: Array<string>): Effect<Array<File>> {
 }
 
 function writeFile(file: File): Effect<void> {
-  return C => {
+  return ({ C }) => {
     const overwrite = pipe(
       C.debug(`Overwriting file ${file.path}`),
       TE.chain(() => C.writeFile(file.path, file.content))
@@ -127,41 +130,9 @@ function writeFiles(files: Array<File>): Effect<void> {
   )
 }
 
-const getPackageJSON: Effect<PackageJSON> = C =>
-  pipe(
-    C.readFile(path.join(process.cwd(), 'package.json')),
-    TE.chain(s => {
-      const json = JSON.parse(s)
-      const name = json.name
-
-      return pipe(
-        C.debug(`Project name detected: ${name}`),
-        TE.map(() => ({
-          name,
-          homepage: json.homepage,
-          docsts: json.docsts
-        }))
-      )
-    })
-  )
-
-// TODO: merge default config with provided one
-function validateConfigJSON(pkg: PackageJSON): Effect<[config.Config, PackageJSON]> {
-  return C =>
-    pipe(
-      pkg.docsts || {},
-      config.PartialConfig.decode,
-      TE.fromEither,
-      TE.mapLeft(formatValidationErrors),
-      TE.mapLeft(errors => 'Failed to decode "docsts" config:\n' + errors.join('\n')),
-      TE.map(validConfig => config.merge(validConfig, C.config)),
-      TE.map(config => [config, pkg])
-    )
-}
-
 const srcPattern = path.join(srcDir, '**', '*.ts')
 
-const getSrcPaths: Effect<Array<string>> = C =>
+const getSrcPaths: Effect<Array<string>> = ({ C }) =>
   pipe(
     C.getFilenames(srcPattern),
     TE.map(paths => A.array.map(paths, path.normalize)),
@@ -171,10 +142,10 @@ const getSrcPaths: Effect<Array<string>> = C =>
 const readSources: Effect<Array<File>> = pipe(getSrcPaths, RTE.chain(readFiles))
 
 function parseFiles(files: Array<File>): Effect<Array<Module>> {
-  return C =>
+  return ({ C, Env }) =>
     pipe(
       C.log('Parsing files...'),
-      TE.chain(() => TE.fromEither(pipe(P.parseFiles(C.config, files))))
+      TE.chain(() => TE.fromEither(pipe(P.parseFiles(Env.config, files))))
     )
 }
 
@@ -244,13 +215,13 @@ function getExampleIndex(examples: Array<File>): File {
 
 const examplePattern = path.join(outDir, 'examples')
 
-const cleanExamples: Effect<void> = C =>
+const cleanExamples: Effect<void> = ({ C }) =>
   pipe(
     C.debug(`Clean up examples: deleting ${examplePattern}...`),
     TE.chain(() => C.clean(examplePattern))
   )
 
-const spawnTsNode: Effect<void> = C =>
+const spawnTsNode: Effect<void> = ({ C }) =>
   pipe(
     C.log(`Type checking examples...`),
     TE.chain(() =>
@@ -263,8 +234,8 @@ const spawnTsNode: Effect<void> = C =>
 
 function writeExamples(examples: Array<File>): Effect<void> {
   return pipe(
-    RTE.ask<Capabilities>(),
-    RTE.chain(C =>
+    RTE.ask<Context>(),
+    RTE.chain(({ C }) =>
       pipe(
         R.reader.of(C.log(`Writing examples...`)),
         RTE.chain(() => writeFiles([getExampleIndex(examples), ...examples]))
@@ -273,17 +244,19 @@ function writeExamples(examples: Array<File>): Effect<void> {
   )
 }
 
-function typecheckExamples(projectName: string): (modules: Array<Module>) => Effect<void> {
-  return modules => {
-    const examples = handleImports(getExampleFiles(modules), projectName)
-    return examples.length === 0
-      ? cleanExamples
-      : pipe(
-          writeExamples(examples),
-          RTE.chain(() => spawnTsNode),
-          RTE.chain(() => cleanExamples)
-        )
-  }
+function typecheckExamples(modules: Array<Module>): Effect<void> {
+  return pipe(
+    ({ Env }: Context) => TE.of<string, Array<File>>(handleImports(getExampleFiles(modules), Env.name)),
+    RTE.chain(examples =>
+      examples.length === 0
+        ? cleanExamples
+        : pipe(
+            writeExamples(examples),
+            RTE.chain(() => spawnTsNode),
+            RTE.chain(() => cleanExamples)
+          )
+    )
+  )
 }
 
 const home: File = file(
@@ -344,7 +317,7 @@ function getMarkdownFiles(projectName: string, homepage: string): (modules: Arra
 const outPattern = path.join(outDir, '**/*.ts.md')
 
 function writeMarkdownFiles(files: Array<File>): Effect<void> {
-  const cleanOut: Effect<void> = C =>
+  const cleanOut: Effect<void> = ({ C }) =>
     pipe(
       C.log(`Writing markdown...`),
       TE.chain(() => C.debug(`Clean up docs folder: deleting ${outPattern}...`)),
@@ -357,29 +330,18 @@ function writeMarkdownFiles(files: Array<File>): Effect<void> {
   )
 }
 
-function checkHomepage(pkg: PackageJSON): E.Either<string, string> {
-  return pkg.homepage === undefined ? E.left('Missing homepage in package.json') : E.right(pkg.homepage)
-}
-
 /**
  * @since 0.2.0
  */
 export const main: Effect<void> = pipe(
-  getPackageJSON,
-  RTE.chain(validateConfigJSON),
-  RTE.chain(([config, pkg]) => C =>
+  RTE.ask<Context>(),
+  RTE.chain(ctx =>
     pipe(
-      RTE.fromEither(checkHomepage(pkg)),
-      RTE.chain(homepage =>
-        pipe(
-          readSources,
-          RTE.chain(parseFiles),
-          RTE.chainFirst(typecheckExamples(pkg.name)),
-          RTE.map(getMarkdownFiles(pkg.name, homepage)),
-          RTE.chain(writeMarkdownFiles)
-        )
-      )
-    // TODO !!! Find a way to modify the context without this hack (?)
-    )({ ...C, config })
+      readSources,
+      RTE.chain(parseFiles),
+      RTE.chainFirst(typecheckExamples),
+      RTE.map(getMarkdownFiles(ctx.Env.name, ctx.Env.homepage)),
+      RTE.chain(writeMarkdownFiles)
+    )
   )
 )

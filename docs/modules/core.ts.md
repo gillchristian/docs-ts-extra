@@ -14,9 +14,10 @@ Added in v0.2.0
 
 - [utils](#utils)
   - [Capabilities (interface)](#capabilities-interface)
-  - [ConfigCtx (interface)](#configctx-interface)
+  - [Context (interface)](#context-interface)
   - [Eff (interface)](#eff-interface)
   - [Effect (interface)](#effect-interface)
+  - [Env (interface)](#env-interface)
   - [MonadFileSystem (interface)](#monadfilesystem-interface)
   - [MonadLog (interface)](#monadlog-interface)
   - [main](#main)
@@ -30,22 +31,23 @@ Added in v0.2.0
 **Signature**
 
 ```ts
-export interface Capabilities extends MonadFileSystem, MonadLog, ConfigCtx {}
+export interface Capabilities extends MonadFileSystem, MonadLog {}
 ```
 
 Added in v0.2.0
 
-## ConfigCtx (interface)
+## Context (interface)
 
 **Signature**
 
 ```ts
-export interface ConfigCtx {
-  readonly config: config.Config
+export interface Context {
+  readonly C: Capabilities
+  readonly Env: Env
 }
 ```
 
-Added in v0.3.0
+Added in v0.6.0
 
 ## Eff (interface)
 
@@ -66,10 +68,24 @@ App effect
 **Signature**
 
 ```ts
-export interface Effect<A> extends RTE.ReaderTaskEither<Capabilities, string, A> {}
+export interface Effect<A> extends RTE.ReaderTaskEither<Context, string, A> {}
 ```
 
 Added in v0.2.0
+
+## Env (interface)
+
+**Signature**
+
+```ts
+export interface Env {
+  readonly name: string
+  readonly homepage: string
+  readonly config: config.Config
+}
+```
+
+Added in v0.6.0
 
 ## MonadFileSystem (interface)
 
