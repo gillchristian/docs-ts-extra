@@ -183,7 +183,7 @@ function addAssertImport(code: string): string {
 
 function handleImports(files: Array<File>, projectName: string, rootDir: string): Array<File> {
   // TODO: should this use package.json:main or tsconfig.json to figure out replace patterns ?
-  // TODO: should replace patterns be configurable ?
+  // TODO: should replace patterns be configurable? Eg '{projectName}/lib' transforms to '{rootDir}/' instead of '{rootDir}/lib'
   function replaceProjectName(source: string): string {
     // Matches imports of the form:
     // import { foo } from 'projectName'
@@ -194,7 +194,6 @@ function handleImports(files: Array<File>, projectName: string, rootDir: string)
     // Matches imports of the form:
     // import { foo } from 'projectName/...'
     const other = new RegExp(`from '${projectName}/`, 'g')
-    // TODO: use path.join ????
     return source
       .replace(root, `from '../../${rootDir}'`)
       .replace(module, `from '../../${rootDir}/`)
