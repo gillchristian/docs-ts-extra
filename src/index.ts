@@ -16,7 +16,7 @@ import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { sequenceS } from 'fp-ts/lib/Apply'
 import { formatValidationErrors } from 'io-ts-reporters'
 import * as core from './core'
-import * as config from './config'
+import { Config, PartialConfig, defaultConfig, mergeConfig } from './config'
 
 interface Effect<A> extends RTE.ReaderTaskEither<core.Capabilities, string, A> {}
 
@@ -44,13 +44,18 @@ const getPackageJSON: Effect<PackageJSON> = C =>
     })
   )
 
-function validateConfig(pkg: PackageJSON, defaultConfig: config.Config): E.Either<string, config.Config> {
+function validateConfig(pkg: PackageJSON, def: Config): E.Either<string, Config> {
   return pipe(
     pkg.docsts || {},
-    config.PartialConfig.decode,
+    PartialConfig.decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(errors => 'Failed to decode "docsts" config:\n' + errors.join('\n')),
-    E.map(validConfig => config.merge(validConfig, defaultConfig))
+    E.map(validConfig => mergeConfig(validConfig, def)),
+    E.map(config => ({
+      ...config,
+      rootDir: path.normalize(config.rootDir).replace(/\/$/, ''),
+      outDir: path.normalize(config.outDir).replace(/\/$/, '')
+    }))
   )
 }
 
@@ -62,7 +67,7 @@ const getContext: Effect<core.Env> = pipe(
   getPackageJSON,
   RTE.chainEitherK(pkg =>
     sequenceS(E.either)({
-      config: validateConfig(pkg, config.defaultConfig),
+      config: validateConfig(pkg, defaultConfig),
       name: E.right(pkg.name),
       homepage: checkHomepage(pkg)
     })

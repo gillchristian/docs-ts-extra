@@ -26,7 +26,7 @@ export interface Config {
 /**
  * @since 0.6.0
  */
-export const merge = (partial: PartialConfig, config: Config): Config => ({
+export const mergeConfig = (partial: PartialConfig, config: Config): Config => ({
   strict: partial.strict === undefined ? config.strict : partial.strict,
   outDir: partial.outDir === undefined ? config.outDir : partial.outDir,
   rootDir: partial.rootDir === undefined ? config.rootDir : partial.rootDir

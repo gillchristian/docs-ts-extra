@@ -73,8 +73,6 @@ export interface Context {
  */
 export interface Effect<A> extends RTE.ReaderTaskEither<Context, string, A> {}
 
-const srcDir = 'src'
-
 interface File {
   readonly path: string
   readonly content: string
@@ -129,11 +127,12 @@ function writeFiles(files: Array<File>): Effect<void> {
   )
 }
 
-const srcPattern = path.join(srcDir, '**', '*.ts')
+// TODO: tsx !!!
+const rootPattern = (rootDir: string) => path.join(rootDir, '**', '*.ts')
 
-const getSrcPaths: Effect<Array<string>> = ({ C }) =>
+const getSrcPaths: Effect<Array<string>> = ({ C, Env }) =>
   pipe(
-    C.getFilenames(srcPattern),
+    C.getFilenames(rootPattern(Env.config.rootDir)),
     TE.map(paths => A.array.map(paths, path.normalize)),
     TE.chainFirst(paths => C.info(`${paths.length} modules found`))
   )
@@ -182,9 +181,9 @@ function addAssertImport(code: string): string {
   return code.indexOf('assert.') !== -1 ? `import * as assert from 'assert'\n` + code : code
 }
 
-function handleImports(files: Array<File>, projectName: string): Array<File> {
-  // HERE: why treat src/lib differently ???
-  // HERE: this should be configurable (the src)
+function handleImports(files: Array<File>, projectName: string, rootDir: string): Array<File> {
+  // TODO: should this use package.json:main or tsconfig.json to figure out replace patterns ?
+  // TODO: should replace patterns be configurable ?
   function replaceProjectName(source: string): string {
     // Matches imports of the form:
     // import { foo } from 'projectName'
@@ -195,10 +194,11 @@ function handleImports(files: Array<File>, projectName: string): Array<File> {
     // Matches imports of the form:
     // import { foo } from 'projectName/...'
     const other = new RegExp(`from '${projectName}/`, 'g')
+    // TODO: use path.join ????
     return source
-      .replace(root, `from '../../src'`)
-      .replace(module, `from '../../src/`)
-      .replace(other, `from '../../src/`)
+      .replace(root, `from '../../${rootDir}'`)
+      .replace(module, `from '../../${rootDir}/`)
+      .replace(other, `from '../../${rootDir}/`)
   }
   return files.map(f => {
     const handleProjectImports = replaceProjectName(f.content)
@@ -248,7 +248,9 @@ function writeExamples(examples: Array<File>): Effect<void> {
 function typecheckExamples(modules: Array<Module>): Effect<void> {
   return pipe(
     ({ Env }: Context) =>
-      TE.of<string, Array<File>>(handleImports(getExampleFiles(Env.config.outDir, modules), Env.name)),
+      TE.of<string, Array<File>>(
+        handleImports(getExampleFiles(Env.config.outDir, modules), Env.name, Env.config.rootDir)
+      ),
     RTE.chain(examples =>
       examples.length === 0
         ? cleanExamples

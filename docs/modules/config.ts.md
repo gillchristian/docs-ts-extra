@@ -15,7 +15,7 @@ parent: Modules
   - [PartialConfig](#partialconfig)
   - [PartialConfig (interface)](#partialconfig-interface)
   - [defaultConfig](#defaultconfig)
-  - [merge](#merge)
+  - [mergeConfig](#mergeconfig)
 
 ---
 
@@ -65,12 +65,12 @@ export declare const defaultConfig: Config
 
 Added in v0.6.0
 
-## merge
+## mergeConfig
 
 **Signature**
 
 ```ts
-export declare const merge: (partial: PartialConfig, config: Config) => Config
+export declare const mergeConfig: (partial: PartialConfig, config: Config) => Config
 ```
 
 Added in v0.6.0
