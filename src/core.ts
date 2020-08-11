@@ -73,7 +73,6 @@ export interface Context {
  */
 export interface Effect<A> extends RTE.ReaderTaskEither<Context, string, A> {}
 
-const outDir = 'docs'
 const srcDir = 'src'
 
 interface File {
@@ -151,7 +150,7 @@ function parseFiles(files: Array<File>): Effect<Array<Module>> {
 
 const foldFiles = fold(A.getMonoid<File>())
 
-function getExampleFiles(modules: Array<Module>): Array<File> {
+function getExampleFiles(outDir: string, modules: Array<Module>): Array<File> {
   return A.array.chain(modules, module => {
     const prefix = module.path.join('-')
     function getDocumentableExamples(documentable: Documentable): Array<File> {
@@ -208,25 +207,27 @@ function handleImports(files: Array<File>, projectName: string): Array<File> {
   })
 }
 
-function getExampleIndex(examples: Array<File>): File {
+function getExampleIndex(outDir: string, examples: Array<File>): File {
   const content = examples.map(example => `import './${path.basename(example.path)}'`).join('\n') + '\n'
   return file(path.join(outDir, 'examples', 'index.ts'), content, true)
 }
 
-const examplePattern = path.join(outDir, 'examples')
+const examplePattern = (outDir: string) => path.join(outDir, 'examples')
 
-const cleanExamples: Effect<void> = ({ C }) =>
+const cleanExamples: Effect<void> = ({ C, Env }) =>
   pipe(
-    C.debug(`Clean up examples: deleting ${examplePattern}...`),
-    TE.chain(() => C.clean(examplePattern))
+    C.debug(`Clean up examples: deleting ${examplePattern(Env.config.outDir)}...`),
+    TE.chain(() => C.clean(examplePattern(Env.config.outDir)))
   )
 
-const spawnTsNode: Effect<void> = ({ C }) =>
+const spawnTsNode: Effect<void> = ({ C, Env }) =>
   pipe(
     C.log(`Type checking examples...`),
     TE.chain(() =>
       TE.fromIOEither(() => {
-        const { status } = spawnSync('ts-node', [path.join(outDir, 'examples', 'index.ts')], { stdio: 'inherit' })
+        const { status } = spawnSync('ts-node', [path.join(Env.config.outDir, 'examples', 'index.ts')], {
+          stdio: 'inherit'
+        })
         return status === 0 ? E.right(undefined) : E.left('Type checking error')
       })
     )
@@ -235,10 +236,10 @@ const spawnTsNode: Effect<void> = ({ C }) =>
 function writeExamples(examples: Array<File>): Effect<void> {
   return pipe(
     RTE.ask<Context>(),
-    RTE.chain(({ C }) =>
+    RTE.chain(({ C, Env }) =>
       pipe(
         R.reader.of(C.log(`Writing examples...`)),
-        RTE.chain(() => writeFiles([getExampleIndex(examples), ...examples]))
+        RTE.chain(() => writeFiles([getExampleIndex(Env.config.outDir, examples), ...examples]))
       )
     )
   )
@@ -246,7 +247,8 @@ function writeExamples(examples: Array<File>): Effect<void> {
 
 function typecheckExamples(modules: Array<Module>): Effect<void> {
   return pipe(
-    ({ Env }: Context) => TE.of<string, Array<File>>(handleImports(getExampleFiles(modules), Env.name)),
+    ({ Env }: Context) =>
+      TE.of<string, Array<File>>(handleImports(getExampleFiles(Env.config.outDir, modules), Env.name)),
     RTE.chain(examples =>
       examples.length === 0
         ? cleanExamples
@@ -259,33 +261,35 @@ function typecheckExamples(modules: Array<Module>): Effect<void> {
   )
 }
 
-const home: File = file(
-  path.join(outDir, 'index.md'),
-  `---
+const home = (outDir: string): File =>
+  file(
+    path.join(outDir, 'index.md'),
+    `---
 title: Home
 nav_order: 1
 ---
 `,
-  false
-)
+    false
+  )
 
-const modulesIndex: File = file(
-  path.join(outDir, 'modules', 'index.md'),
-  `---
+const modulesIndex = (outDir: string): File =>
+  file(
+    path.join(outDir, 'modules', 'index.md'),
+    `---
 title: Modules
 has_children: true
 permalink: /docs/modules
 nav_order: 2
 ---
 `,
-  false
-)
+    false
+  )
 
-const configYMLPath = path.join(outDir, '_config.yml')
+const configYMLPath = (outDir: string) => path.join(outDir, '_config.yml')
 
-function getConfigYML(projectName: string, homepage: string): File {
+function getConfigYML(env: Env): File {
   return file(
-    configYMLPath,
+    configYMLPath(env.config.outDir),
     `remote_theme: pmarsceill/just-the-docs
 
 # Enable or disable the site search
@@ -293,8 +297,8 @@ search_enabled: true
 
 # Aux links for the upper right navigation
 aux_links:
-  '${projectName} on GitHub':
-    - '${homepage}'
+  '${env.name} on GitHub':
+    - '${env.homepage}'
 `,
     false
   )
@@ -302,26 +306,33 @@ aux_links:
 
 let counter = 1
 
-function getMarkdownOutpuPath(module: Module): string {
+function getMarkdownOutpuPath(outDir: string, module: Module): string {
   return path.join(outDir, 'modules', module.path.slice(1).join(path.sep) + '.md')
 }
 
-function getModuleMarkdownFiles(modules: Array<Module>): Array<File> {
-  return modules.map(module => file(getMarkdownOutpuPath(module), markdown.printModule(module, counter++), true))
+function getModuleMarkdownFiles(outDir: string, modules: Array<Module>): Array<File> {
+  return modules.map(module =>
+    file(getMarkdownOutpuPath(outDir, module), markdown.printModule(module, counter++), true)
+  )
 }
 
-function getMarkdownFiles(projectName: string, homepage: string): (modules: Array<Module>) => Array<File> {
-  return modules => [home, modulesIndex, getConfigYML(projectName, homepage), ...getModuleMarkdownFiles(modules)]
+function getMarkdownFiles(env: Env): (modules: Array<Module>) => Array<File> {
+  return modules => [
+    home(env.config.outDir),
+    modulesIndex(env.config.outDir),
+    getConfigYML(env),
+    ...getModuleMarkdownFiles(env.config.outDir, modules)
+  ]
 }
 
-const outPattern = path.join(outDir, '**/*.ts.md')
+const outPattern = (outDir: string) => path.join(outDir, '**/*.{ts,tsx}.md')
 
 function writeMarkdownFiles(files: Array<File>): Effect<void> {
-  const cleanOut: Effect<void> = ({ C }) =>
+  const cleanOut: Effect<void> = ({ C, Env }) =>
     pipe(
       C.log(`Writing markdown...`),
-      TE.chain(() => C.debug(`Clean up docs folder: deleting ${outPattern}...`)),
-      TE.chain(() => C.clean(outPattern))
+      TE.chain(() => C.debug(`Clean up docs folder: deleting ${outPattern(Env.config.outDir)}...`)),
+      TE.chain(() => C.clean(outPattern(Env.config.outDir)))
     )
 
   return pipe(
@@ -340,7 +351,7 @@ export const main: Effect<void> = pipe(
       readSources,
       RTE.chain(parseFiles),
       RTE.chainFirst(typecheckExamples),
-      RTE.map(getMarkdownFiles(ctx.Env.name, ctx.Env.homepage)),
+      RTE.map(getMarkdownFiles(ctx.Env)),
       RTE.chain(writeMarkdownFiles)
     )
   )
