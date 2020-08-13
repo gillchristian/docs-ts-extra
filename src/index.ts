@@ -46,7 +46,7 @@ const getPackageJSON: Effect<PackageJSON> = C =>
 
 function validateConfig(pkg: PackageJSON, def: Config): E.Either<string, Config> {
   return pipe(
-    pkg.docsts || {},
+    pkg.docsts === undefined || pkg.docsts === null ? {} : pkg.docsts,
     PartialConfig.decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(errors => 'Failed to decode "docsts" config:\n' + errors.join('\n')),

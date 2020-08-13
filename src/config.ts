@@ -38,4 +38,4 @@ export const mergeConfig = (partial: PartialConfig, config: Config): Config => (
 /**
  * @since 0.6.0
  */
-export const defaultConfig: Config = { strict: false, outDir: 'docs', rootDir: 'src' }
+export const defaultConfig: Config = { strict: true, outDir: 'docs', rootDir: 'src' }

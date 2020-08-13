@@ -1,9 +1,11 @@
 import * as assert from 'assert'
-import * as P from '../src/parser'
 import { right, left } from 'fp-ts/lib/Either'
 import * as ast from 'ts-morph'
 import * as O from 'fp-ts/lib/Option'
+
 import * as D from '../src/domain'
+import * as P from '../src/parser'
+import { defaultConfig } from '../src/config'
 
 const project = new ast.Project()
 
@@ -15,8 +17,11 @@ function getTestSourceFile(source: string): ast.SourceFile {
 
 const testEnv: P.Env = {
   path: ['test'],
-  sourceFile: getTestSourceFile('')
+  sourceFile: getTestSourceFile(''),
+  config: defaultConfig
 }
+
+// TODO tests on non-strict mode !!!
 
 describe('parser', () => {
   it('parseContent', () => {
@@ -56,7 +61,7 @@ describe('parser', () => {
         deprecated: false,
         description: O.some('description'),
         examples: [],
-        since: '1.0.0'
+        since: O.some('1.0.0')
       })
     )
   })
@@ -108,7 +113,7 @@ export interface A {}`
           description: O.some('a description...'),
           name: 'A',
           signature: 'export interface A {}',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -203,7 +208,7 @@ export const f = (a: number, b: number): { [key: string]: number } => ({ a, b })
           description: O.some('a description...'),
           name: 'f',
           signatures: ['export declare const f: (a: number, b: number) => { [key: string]: number; }'],
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: ['assert.deeStrictEqual(f(1, 2), { a: 1, b: 2})', 'assert.deeStrictEqual(f(3, 4), { a: 3, b: 4})'],
           category: O.none
         }
@@ -228,7 +233,7 @@ export function f(a: number, b: number): { [key: string]: number } { return { a,
           description: O.none,
           name: 'f',
           signatures: ['export declare function f(a: number, b: number): { [key: string]: number }'],
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -255,7 +260,7 @@ export function f(a: number, b: number): { [key: string]: number } { return { a,
           description: O.some('a description...'),
           name: 'f',
           signatures: ['export declare function f(a: number, b: number): { [key: string]: number }'],
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -287,7 +292,7 @@ export function f(a: any, b: any): { [key: string]: number } { return { a, b } }
             'export declare function f(a: int, b: int): { [key: string]: number }',
             'export declare function f(a: number, b: number): { [key: string]: number }'
           ],
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -315,7 +320,7 @@ export type Option<A> = None<A> | Some<A>`
           description: O.some('a description...'),
           name: 'Option',
           signature: 'export type Option<A> = None<A> | Some<A>',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -343,7 +348,7 @@ export const s: string = ''`
           description: O.some('a description...'),
           name: 's',
           signature: 'export declare const s: string',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -367,7 +372,7 @@ export const left: <E = never, A = never>(l: E) => string = T.left`
           description: O.none,
           name: 'left',
           signature: 'export declare const left: <E = never, A = never>(l: E) => string',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -391,7 +396,7 @@ export const empty = new Map<never, never>()`
           description: O.none,
           name: 'empty',
           signature: 'export declare const empty: Map<never, never>',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -423,7 +428,7 @@ export const taskSeq: typeof task = {
           description: O.none,
           name: 'taskSeq',
           signature: 'export declare const taskSeq: { a: number; }',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         }
@@ -469,7 +474,7 @@ describe('parseClasses', () => {
       P.parseClasses({ ...testEnv, sourceFile }),
       right([
         D.makeClass(
-          D.makeDocumentable('MyClass', O.none, '1.0.0', false, [], O.none),
+          D.makeDocumentable('MyClass', O.none, O.some('1.0.0'), false, [], O.none),
           'export declare class MyClass<A>',
           [],
           [],
@@ -496,7 +501,7 @@ export class C { constructor() {} }`)
           methods: [],
           name: 'C',
           signature: 'export declare class C { constructor() }',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           staticMethods: [],
           properties: []
         }
@@ -545,7 +550,7 @@ export class Test {
           description: O.some('a class description...'),
           name: 'Test',
           signature: 'export declare class Test { constructor(readonly value: string) }',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none,
           methods: [
@@ -554,7 +559,7 @@ export class Test {
               description: O.some('a method description...'),
               name: 'g',
               signatures: ['g(a: number, b: number): { [key: string]: number }'],
-              since: '1.1.0',
+              since: O.some('1.1.0'),
               examples: [],
               category: O.none
             }
@@ -565,7 +570,7 @@ export class Test {
               description: O.some('a static method description...'),
               name: 'f',
               signatures: ['static f(): void'],
-              since: '1.1.0',
+              since: O.some('1.1.0'),
               examples: [],
               category: O.none
             }
@@ -578,7 +583,7 @@ export class Test {
               category: O.none,
               name: 'a',
               signature: 'readonly a: string',
-              since: '1.1.0'
+              since: O.some('1.1.0')
             }
           ]
         }
@@ -624,7 +629,7 @@ export class Test<A> {
           description: O.some('a class description...'),
           name: 'Test',
           signature: 'export declare class Test<A> { constructor(readonly value: A) }',
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none,
           methods: [
@@ -633,7 +638,7 @@ export class Test<A> {
               description: O.some('a method description...'),
               name: 'map',
               signatures: ['map(f: (a: number) => number): Test', 'map(f: (a: string) => string): Test'],
-              since: '1.1.0',
+              since: O.some('1.1.0'),
               examples: [],
               category: O.none
             }
@@ -644,7 +649,7 @@ export class Test<A> {
               description: O.some('a static method description...'),
               name: 'f',
               signatures: ['static f(x: number): number', 'static f(x: string): string'],
-              since: '1.1.0',
+              since: O.some('1.1.0'),
               examples: [],
               category: O.none
             }
@@ -674,22 +679,25 @@ export const a: number = 1
     )
     assert.deepStrictEqual(
       P.parseModuleDocumentation({ ...testEnv, sourceFile }),
-      right([
-        'test',
-        O.some({
+      right({
+        name: 'test',
+        documentable: O.some({
           name: 'test',
           description: O.some('Manages the configuration settings for the widget'),
           deprecated: true,
-          since: '1.0.0',
+          since: O.some('1.0.0'),
           examples: [],
           category: O.none
         })
-      ])
+      })
     )
   })
-  it('should return no documentation if module has JSDocs', () => {
+  it('should return fail if module has no JSDocs', () => {
     const sourceFile = getTestSourceFile('export const a: number = 1')
-    assert.deepStrictEqual(P.parseModuleDocumentation({ ...testEnv, sourceFile }), right(['test', O.none]))
+    assert.deepStrictEqual(
+      P.parseModuleDocumentation({ ...testEnv, sourceFile }),
+      left('missing documentation in test module')
+    )
   })
 })
 
@@ -717,7 +725,7 @@ describe('parseExports', () => {
           category: O.none,
           name: 'b',
           signature: 'export declare const b: 1',
-          since: '1.0.0'
+          since: O.some('1.0.0')
         }
       ])
     )
@@ -748,7 +756,7 @@ describe('parseExports', () => {
           category: O.none,
           name: 'a',
           signature: 'export declare const a: any',
-          since: '1.0.0'
+          since: O.some('1.0.0')
         },
         {
           _tag: 'Export',
@@ -758,7 +766,7 @@ describe('parseExports', () => {
           category: O.none,
           name: 'b',
           signature: 'export declare const b: any',
-          since: '2.0.0'
+          since: O.some('2.0.0')
         }
       ])
     )
@@ -796,7 +804,7 @@ export {
           category: O.none,
           name: 'b',
           signature: 'export declare const b: 1',
-          since: '1.0.0'
+          since: O.some('1.0.0')
         }
       ])
     )
