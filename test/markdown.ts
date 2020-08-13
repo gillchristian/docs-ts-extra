@@ -1,7 +1,8 @@
 import * as assert from 'assert'
+import * as O from 'fp-ts/lib/Option'
+
 import { printExamples, printClass } from '../src/markdown'
 import { makeClass, makeDocumentable, makeProperty } from '../src/domain'
-import { none } from 'fp-ts/lib/Option'
 
 describe('makdown', () => {
   describe('printExamples', () => {
@@ -19,11 +20,11 @@ describe('makdown', () => {
     assert.deepStrictEqual(
       printClass(
         makeClass(
-          makeDocumentable('A', none, '1.0.0', false, [], none),
+          makeDocumentable('A', O.none, O.some('1.0.0'), false, [], O.none),
           'declare class A { constructor() }',
           [],
           [],
-          [makeProperty(makeDocumentable('read', none, '1.0.0', false, [], none), 'readonly read: IO<A>')]
+          [makeProperty(makeDocumentable('read', O.none, O.some('1.0.0'), false, [], O.none), 'readonly read: IO<A>')]
         )
       ),
       `## A (class)
