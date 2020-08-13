@@ -6,6 +6,8 @@ parent: Modules
 
 ## config overview
 
+Added in v0.6.0
+
 ---
 
 <h2 class="text-delta">Table of contents</h2>

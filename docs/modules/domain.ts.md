@@ -79,7 +79,7 @@ Added in v0.5.0
 export declare function makeDocumentable(
   name: string,
   description: O.Option<string>,
-  since: string,
+  since: O.Option<string>,
   deprecated: boolean,
   examples: Array<Example>,
   category: O.Option<string>
@@ -229,7 +229,7 @@ Added in v0.5.0
 export interface Documentable {
   readonly name: string
   readonly description: O.Option<string>
-  readonly since: string
+  readonly since: O.Option<string>
   readonly deprecated: boolean
   readonly examples: Array<Example>
   readonly category: O.Option<string>

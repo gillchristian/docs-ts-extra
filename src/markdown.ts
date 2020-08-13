@@ -201,8 +201,14 @@ export function printExamples(examples: Array<string>): string {
   )
 }
 
-function printSince(since: string): string {
-  return CRLF + `Added in v${since}`
+function printSince(since: O.Option<string>): string {
+  return pipe(
+    since,
+    O.fold(
+      () => '',
+      since => CRLF + `Added in v${since}`
+    )
+  )
 }
 
 function printHeader(title: string, order: number): string {

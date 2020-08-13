@@ -96,39 +96,43 @@ function doIgnore(comment: Comment): boolean {
   return pipe(R.lookup('internal', comment.tags), O.isSome) || pipe(R.lookup('ignore', comment.tags), O.isSome)
 }
 
-/**
- * @internal
- */
-export function getCommentInfo(
-  name: string,
-  text: string
-): Parser<{
+interface CommentInfo {
   description: O.Option<string>
-  since: string
+  since: O.Option<string>
   deprecated: boolean
   examples: Array<D.Example>
   category: O.Option<string>
-}> {
-  const comment = parseComment(text)
-  const since = pipe(R.lookup('since', comment.tags), O.chain(NEA.head))
-  if (O.isNone(since)) {
-    return env => E.left(`missing @since tag in ${env.path.join('/')}#${name} documentation`)
-  }
-  const category = pipe(R.lookup('category', comment.tags), O.chain(NEA.head))
-  if (O.isNone(category) && pipe(R.hasOwnProperty('category', comment.tags))) {
-    return env => E.left(`missing @category value in ${env.path.join('/')}#${name} documentation`)
-  }
-  return RE.right({
-    description: comment.description,
-    since: since.value,
-    deprecated: pipe(R.lookup('deprecated', comment.tags), O.isSome),
-    examples: pipe(
-      R.lookup('example', comment.tags),
-      O.map(A.compact),
-      O.getOrElse((): Array<string> => A.empty)
-    ),
-    category: category
-  })
+}
+
+/**
+ * @internal
+ */
+export function getCommentInfo(name: string, text: string): Parser<CommentInfo> {
+  return pipe(
+    RE.ask<Env>(),
+    RE.chain(env => {
+      const comment = parseComment(text)
+      const since = pipe(R.lookup('since', comment.tags), O.chain(NEA.head))
+      if (env.config.strict && O.isNone(since)) {
+        return env => E.left(`missing @since tag in ${env.path.join('/')}#${name} documentation`)
+      }
+      const category = pipe(R.lookup('category', comment.tags), O.chain(NEA.head))
+      if (O.isNone(category) && pipe(R.hasOwnProperty('category', comment.tags))) {
+        return env => E.left(`missing @category value in ${env.path.join('/')}#${name} documentation`)
+      }
+      return RE.right({
+        description: comment.description,
+        since: since,
+        deprecated: pipe(R.lookup('deprecated', comment.tags), O.isSome),
+        examples: pipe(
+          R.lookup('example', comment.tags),
+          O.map(A.compact),
+          O.getOrElse((): Array<string> => A.empty)
+        ),
+        category: category
+      })
+    })
+  )
 }
 
 const sortModules = A.sort(D.ordModule)
@@ -512,49 +516,46 @@ function getModuleName(path: Array<string>): string {
   return P.parse(path[path.length - 1]).name
 }
 
-type ModuleTuple = [string, O.Option<D.Documentable>]
+interface ModuleInfo {
+  name: string
+  documentable: O.Option<D.Documentable>
+}
+
+const makeModuleInfo = (name: string) => (info: CommentInfo): ModuleInfo => ({
+  name,
+  documentable: O.some(
+    D.makeDocumentable(name, info.description, info.since, info.deprecated, info.examples, info.category)
+  )
+})
 
 /**
  * @internal
  */
-export const parseModuleDocumentation: Parser<ModuleTuple> = env => {
-  const name = getModuleName(env.path)
-  const onMissingDocumentation = () =>
-    env.config.strict
-      ? E.left(`missing documentation in ${env.path.join('/')} module`)
-      : E.right([name, O.none] as ModuleTuple)
+export const parseModuleDocumentation: Parser<ModuleInfo> = pipe(
+  RE.ask<Env>(),
+  RE.chain(env => {
+    const name = getModuleName(env.path)
+    const onMissingDocumentation = flow(
+      () =>
+        env.config.strict
+          ? E.left(`missing documentation in ${env.path.join('/')} module`)
+          : E.right({ name, documentable: O.none }),
+      RE.fromEither
+    )
 
-  return pipe(
-    env.sourceFile.getStatements(),
-    A.foldLeft(onMissingDocumentation, statement =>
-      pipe(
-        statement.getLeadingCommentRanges(),
-        A.foldLeft(onMissingDocumentation, commentRange =>
-          pipe(
-            getCommentInfo(name, commentRange.getText())(env),
-            E.fold(
-              () => E.left(`missing @since tag in ${env.path.join('/')} module documentation`),
-              info =>
-                E.right([
-                  name,
-                  O.some(
-                    D.makeDocumentable(
-                      name,
-                      info.description,
-                      info.since,
-                      info.deprecated,
-                      info.examples,
-                      info.category
-                    )
-                  )
-                ])
-            )
+    return pipe(
+      env.sourceFile.getStatements(),
+      A.foldLeft(onMissingDocumentation, statement =>
+        pipe(
+          statement.getLeadingCommentRanges(),
+          A.foldLeft(onMissingDocumentation, commentRange =>
+            pipe(getCommentInfo(name, commentRange.getText()), RE.map(makeModuleInfo(name)))
           )
         )
       )
     )
-  )
-}
+  })
+)
 
 /**
  * @category parser
@@ -573,8 +574,8 @@ export const parseModule: Parser<D.Module> = pipe(
   RE.chain(items => env =>
     E.right(
       D.makeModule(
-        items.documentation[0],
-        items.documentation[1],
+        items.documentation.name,
+        items.documentation.documentable,
         env.path,
         items.interfaces,
         items.typeAliases,
