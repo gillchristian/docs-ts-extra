@@ -8,7 +8,7 @@ import * as doctrine from 'doctrine'
 import * as Apply from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
-import { flow } from 'fp-ts/lib/function'
+import { flow, not } from 'fp-ts/lib/function'
 import * as NEA from 'fp-ts/lib/NonEmptyArray'
 import * as O from 'fp-ts/lib/Option'
 import * as Ord from 'fp-ts/lib/Ord'
@@ -615,6 +615,6 @@ export function parseFiles(config: config.Config, files: Array<File>): E.Either<
   const traverse = A.array.traverse(E.getValidation(semigroupError))
   return pipe(
     traverse(files, parseFile(config, createProject(files))),
-    E.map(flow(A.filter(D.isModuleNotDeprecated), sortModules))
+    E.map(flow(A.filter(not(D.isModuleDeprecated)), sortModules))
   )
 }
