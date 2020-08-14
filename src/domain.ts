@@ -247,18 +247,14 @@ export const ordModule: Ord<Module> = pipe(
 // utils
 // -------------------------------------------------------------------------------------
 
-// TODO: better name :)
 /**
  * A module without documentation is considered not deprecated
  *
  * @category utils
  * @since 0.6.0
  */
-export const isModuleNotDeprecated = (module: Module) =>
+export const isModuleDeprecated = (module: Module) =>
   pipe(
     module.documentation,
-    O.fold(
-      () => true,
-      doc => !doc.deprecated
-    )
+    O.exists(doc => doc.deprecated)
   )

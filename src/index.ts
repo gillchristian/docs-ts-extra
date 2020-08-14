@@ -44,9 +44,9 @@ const getPackageJSON: Effect<PackageJSON> = C =>
     })
   )
 
-function validateConfig(pkg: PackageJSON, def: Config): E.Either<string, Config> {
+function validateConfig({ docsts = {} }: PackageJSON, def: Config): E.Either<string, Config> {
   return pipe(
-    pkg.docsts === undefined || pkg.docsts === null ? {} : pkg.docsts,
+    docsts,
     PartialConfig.decode,
     E.mapLeft(formatValidationErrors),
     E.mapLeft(errors => 'Failed to decode "docsts" config:\n' + errors.join('\n')),
@@ -108,6 +108,6 @@ export const main: T.Task<void> = pipe(
       RTE.local(C => ({ Env: env, C }))
     )
   ),
-  rte => rte(capabilities),
+  runReader => runReader(capabilities),
   TE.fold(onLeft, () => onRight)
 )

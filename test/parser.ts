@@ -692,7 +692,7 @@ export const a: number = 1
       })
     )
   })
-  it('should return fail if module has no JSDocs', () => {
+  it('should fail if module has no JSDocs', () => {
     const sourceFile = getTestSourceFile('export const a: number = 1')
     assert.deepStrictEqual(
       P.parseModuleDocumentation({ ...testEnv, sourceFile }),

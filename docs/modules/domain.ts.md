@@ -39,7 +39,7 @@ Added in v0.5.0
   - [Property (interface)](#property-interface)
   - [TypeAlias (interface)](#typealias-interface)
 - [utils](#utils)
-  - [isModuleNotDeprecated](#ismodulenotdeprecated)
+  - [isModuleDeprecated](#ismoduledeprecated)
 
 ---
 
@@ -346,14 +346,14 @@ Added in v0.5.0
 
 # utils
 
-## isModuleNotDeprecated
+## isModuleDeprecated
 
 A module without documentation is considered not deprecated
 
 **Signature**
 
 ```ts
-export declare const isModuleNotDeprecated: (module: Module) => boolean
+export declare const isModuleDeprecated: (module: Module) => boolean
 ```
 
 Added in v0.6.0

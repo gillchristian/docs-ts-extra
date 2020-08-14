@@ -246,10 +246,9 @@ function writeExamples(examples: Array<File>): Effect<void> {
 
 function typecheckExamples(modules: Array<Module>): Effect<void> {
   return pipe(
-    ({ Env }: Context) =>
-      TE.of<string, Array<File>>(
-        handleImports(getExampleFiles(Env.config.outDir, modules), Env.name, Env.config.rootDir)
-      ),
+    RTE.asks(({ Env }: Context) =>
+      handleImports(getExampleFiles(Env.config.outDir, modules), Env.name, Env.config.rootDir)
+    ),
     RTE.chain(examples =>
       examples.length === 0
         ? cleanExamples
