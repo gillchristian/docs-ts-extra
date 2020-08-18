@@ -347,18 +347,28 @@ export const parseConstants: Parser<Array<D.Constant>> = pipe(
 )
 
 function parseExportSpecifier(es: ast.ExportSpecifier): Parser<D.Export> {
-  const name = es.compilerNode.name.text
-  const type = stripImportTypes(es.getType().getText(es))
-  const signature = `export declare const ${name}: ${type}`
   return pipe(
-    RE.fromOption(() => `missing ${name} documentation`)(A.head(es.getLeadingCommentRanges())),
-    RE.chain(commentRange => getCommentInfo(name, commentRange.getText())),
-    RE.map(info =>
-      D.makeExport(
-        D.makeDocumentable(name, info.description, info.since, info.deprecated, info.examples, info.category),
-        signature
+    RE.ask<Env>(),
+    RE.chain(env => {
+      const name = es.compilerNode.name.text
+      const type = stripImportTypes(es.getType().getText(es))
+      const signature = `export declare const ${name}: ${type}`
+
+      return pipe(
+        A.head(es.getLeadingCommentRanges()),
+        O.fold(
+          () => (env.config.strict ? RE.left(`missing ${name} documentation`) : RE.right('')),
+          commentRange => RE.right(commentRange.getText())
+        ),
+        RE.chain(commentText => getCommentInfo(name, commentText)),
+        RE.map(info =>
+          D.makeExport(
+            D.makeDocumentable(name, info.description, info.since, info.deprecated, info.examples, info.category),
+            signature
+          )
+        )
       )
-    )
+    })
   )
 }
 
