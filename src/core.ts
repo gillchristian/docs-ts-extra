@@ -12,6 +12,7 @@ import * as O from 'fp-ts/lib/Option'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import * as TE from 'fp-ts/lib/TaskEither'
 
+import { isTsx } from './utils'
 import { Documentable, Module } from './domain'
 import * as markdown from './markdown'
 import * as P from './parser'
@@ -127,8 +128,7 @@ function writeFiles(files: Array<File>): Effect<void> {
   )
 }
 
-// TODO: tsx !!!
-const rootPattern = (rootDir: string) => path.join(rootDir, '**', '*.ts')
+const rootPattern = (rootDir: string) => path.join(rootDir, '**', '*.+(ts|tsx)')
 
 const getSrcPaths: Effect<Array<string>> = ({ C, Env }) =>
   pipe(
@@ -152,10 +152,15 @@ const foldFiles = fold(A.getMonoid<File>())
 function getExampleFiles(outDir: string, modules: Array<Module>): Array<File> {
   return A.array.chain(modules, module => {
     const prefix = module.path.join('-')
+    const extension = isTsx(prefix) ? '.tsx' : '.ts'
+
     function getDocumentableExamples(documentable: Documentable): Array<File> {
-      // HERE: .ts extension should also support .tsx
       return documentable.examples.map((content, i) =>
-        file(path.join(outDir, 'examples', prefix + '-' + documentable.name + '-' + i + '.ts'), content + '\n', true)
+        file(
+          path.join(outDir, 'examples', prefix + '-' + documentable.name + '-' + i + extension),
+          content + '\n',
+          true
+        )
       )
     }
     const moduleExamples = pipe(
@@ -181,6 +186,10 @@ function addAssertImport(code: string): string {
   return code.indexOf('assert.') !== -1 ? `import * as assert from 'assert'\n` + code : code
 }
 
+function addReactImport(code: string): string {
+  return /import\s.*React.*from.*react/.test(code) ? code : `import * as React from 'react'\n` + code
+}
+
 function handleImports(files: Array<File>, projectName: string, rootDir: string): Array<File> {
   // TODO: should this use package.json:main or tsconfig.json to figure out replace patterns ?
   // TODO: should replace patterns be configurable? Eg '{projectName}/lib' transforms to '{rootDir}/' instead of '{rootDir}/lib'
@@ -202,7 +211,8 @@ function handleImports(files: Array<File>, projectName: string, rootDir: string)
   return files.map(f => {
     const handleProjectImports = replaceProjectName(f.content)
     const handleAssert = addAssertImport(handleProjectImports)
-    return file(f.path, handleAssert, f.overwrite)
+    const content = isTsx(f.path) ? addReactImport(handleAssert) : handleAssert
+    return file(f.path, content, f.overwrite)
   })
 }
 

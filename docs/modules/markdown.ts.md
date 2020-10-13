@@ -23,6 +23,7 @@ Added in v0.2.0
   - [printInterface](#printinterface)
   - [printModule](#printmodule)
   - [printTypeAlias](#printtypealias)
+  - [ts](#ts)
 
 ---
 
@@ -33,7 +34,7 @@ Added in v0.2.0
 **Signature**
 
 ```ts
-export declare function printClass(c: Class): string
+export declare function printClass(c: Class, fence: Fence): string
 ```
 
 Added in v0.4.0
@@ -43,7 +44,7 @@ Added in v0.4.0
 **Signature**
 
 ```ts
-export declare function printConstant(c: Constant): string
+export declare function printConstant(c: Constant, fence: Fence): string
 ```
 
 Added in v0.5.0
@@ -53,7 +54,7 @@ Added in v0.5.0
 **Signature**
 
 ```ts
-export declare function printExamples(examples: Array<string>): string
+export declare function printExamples(examples: Array<string>, fence: Fence): string
 ```
 
 Added in v0.2.0
@@ -63,7 +64,7 @@ Added in v0.2.0
 **Signature**
 
 ```ts
-export declare function printExport(e: Export): string
+export declare function printExport(e: Export, fence: Fence): string
 ```
 
 Added in v0.5.0
@@ -73,7 +74,7 @@ Added in v0.5.0
 **Signature**
 
 ```ts
-export declare function printFunction(f: Function): string
+export declare function printFunction(f: Function, fence: Fence): string
 ```
 
 Added in v0.5.0
@@ -83,7 +84,7 @@ Added in v0.5.0
 **Signature**
 
 ```ts
-export declare function printInterface(i: Interface): string
+export declare function printInterface(i: Interface, fence: Fence): string
 ```
 
 Added in v0.5.0
@@ -103,7 +104,15 @@ Added in v0.2.0
 **Signature**
 
 ```ts
-export declare function printTypeAlias(ta: TypeAlias): string
+export declare function printTypeAlias(ta: TypeAlias, fence: Fence): string
 ```
 
 Added in v0.5.0
+
+## ts
+
+**Signature**
+
+```ts
+export declare const ts: Fence
+```
