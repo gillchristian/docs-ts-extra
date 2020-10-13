@@ -1,16 +1,16 @@
 import * as assert from 'assert'
 import * as O from 'fp-ts/lib/Option'
 
-import { printExamples, printClass } from '../src/markdown'
+import { printExamples, printClass, ts } from '../src/markdown'
 import { makeClass, makeDocumentable, makeProperty } from '../src/domain'
 
 describe('makdown', () => {
   describe('printExamples', () => {
     it('should handle multiple examples', () => {
-      assert.strictEqual(printExamples([]), '')
-      assert.strictEqual(printExamples(['example1']), '\n\n**Example**\n\n```ts\nexample1\n```')
+      assert.strictEqual(printExamples([], ts), '')
+      assert.strictEqual(printExamples(['example1'], ts), '\n\n**Example**\n\n```ts\nexample1\n```')
       assert.strictEqual(
-        printExamples(['example1', 'example2']),
+        printExamples(['example1', 'example2'], ts),
         '\n\n**Example**\n\n```ts\nexample1\n```\n\n**Example**\n\n```ts\nexample2\n```'
       )
     })
@@ -25,7 +25,8 @@ describe('makdown', () => {
           [],
           [],
           [makeProperty(makeDocumentable('read', O.none, O.some('1.0.0'), false, [], O.none), 'readonly read: IO<A>')]
-        )
+        ),
+        ts
       ),
       `## A (class)
 

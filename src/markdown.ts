@@ -10,6 +10,9 @@ import { Class, Function, Interface, Method, TypeAlias, Constant, Module, Export
 import { pipe } from 'fp-ts/lib/pipeable'
 import * as NEA from 'fp-ts/lib/NonEmptyArray'
 import * as R from 'fp-ts/lib/Record'
+
+import { isTsx } from './utils'
+
 // HERE why require ?
 const toc = require('markdown-toc')
 
@@ -17,11 +20,13 @@ const CRLF = '\n\n'
 const h1 = (title: string) => `# ${title}`
 const h2 = (title: string) => `## ${title}`
 const h3 = (title: string) => `### ${title}`
-const fence = (language: string) => (code: string): string => '```' + language + '\n' + code + '\n' + '```'
-// HERE suport tsx as well
-const ts = fence('ts')
+const makeFence = (language: string): Fence => code => '```' + language + '\n' + code + '\n' + '```'
+export const ts = makeFence('ts')
+const tsx = makeFence('tsx')
 const bold = (code: string) => '**' + code + '**'
 const strike = (text: string) => '~~' + text + '~~'
+
+type Fence = (code: string) => string
 
 const prettierOptions: prettier.Options = {
   parser: 'markdown',
@@ -38,11 +43,11 @@ function handleTitle(s: string, deprecated: boolean): string {
 /**
  * @since 0.5.0
  */
-export function printInterface(i: Interface): string {
+export function printInterface(i: Interface, fence: Fence): string {
   let s = h2(handleTitle(i.name, i.deprecated) + ' (interface)')
   s += printDescription(i.description)
   s += printSignature(i.signature)
-  s += printExamples(i.examples)
+  s += printExamples(i.examples, fence)
   s += printSince(i.since)
   s += CRLF
   return s
@@ -51,11 +56,11 @@ export function printInterface(i: Interface): string {
 /**
  * @since 0.5.0
  */
-export function printTypeAlias(ta: TypeAlias): string {
+export function printTypeAlias(ta: TypeAlias, fence: Fence): string {
   let s = h2(handleTitle(ta.name, ta.deprecated) + ' (type alias)')
   s += printDescription(ta.description)
   s += printSignature(ta.signature)
-  s += printExamples(ta.examples)
+  s += printExamples(ta.examples, fence)
   s += printSince(ta.since)
   s += CRLF
   return s
@@ -64,11 +69,11 @@ export function printTypeAlias(ta: TypeAlias): string {
 /**
  * @since 0.5.0
  */
-export function printConstant(c: Constant): string {
+export function printConstant(c: Constant, fence: Fence): string {
   let s = h2(handleTitle(c.name, c.deprecated))
   s += printDescription(c.description)
   s += printSignature(c.signature)
-  s += printExamples(c.examples)
+  s += printExamples(c.examples, fence)
   s += printSince(c.since)
   s += CRLF
   return s
@@ -77,21 +82,21 @@ export function printConstant(c: Constant): string {
 /**
  * @since 0.5.0
  */
-export function printFunction(f: Function): string {
+export function printFunction(f: Function, fence: Fence): string {
   let s = h2(handleTitle(f.name, f.deprecated))
   s += printDescription(f.description)
   s += printSignatures(f.signatures)
-  s += printExamples(f.examples)
+  s += printExamples(f.examples, fence)
   s += printSince(f.since)
   s += CRLF
   return s
 }
 
-function printStaticMethod(f: Method): string {
+function printStaticMethod(f: Method, fence: Fence): string {
   let s = h3(handleTitle(f.name, f.deprecated) + ' (static method)')
   s += printDescription(f.description)
   s += printSignatures(f.signatures)
-  s += printExamples(f.examples)
+  s += printExamples(f.examples, fence)
   s += printSince(f.since)
   s += CRLF
   return s
@@ -100,31 +105,31 @@ function printStaticMethod(f: Method): string {
 /**
  * @since 0.5.0
  */
-export function printExport(e: Export): string {
+export function printExport(e: Export, fence: Fence): string {
   let s = h2(handleTitle(e.name, e.deprecated))
   s += printDescription(e.description)
   s += printSignature(e.signature)
-  s += printExamples(e.examples)
+  s += printExamples(e.examples, fence)
   s += printSince(e.since)
   s += CRLF
   return s
 }
 
-function printMethod(m: Method): string {
+function printMethod(m: Method, fence: Fence): string {
   let s = h3(handleTitle(m.name, m.deprecated) + ' (method)')
   s += printDescription(m.description)
   s += printSignatures(m.signatures)
-  s += printExamples(m.examples)
+  s += printExamples(m.examples, fence)
   s += printSince(m.since)
   s += CRLF
   return s
 }
 
-function printProperty(p: Property): string {
+function printProperty(p: Property, fence: Fence): string {
   let s = h3(handleTitle(p.name, p.deprecated) + ' (property)')
   s += printDescription(p.description)
   s += printSignature(p.signature)
-  s += printExamples(p.examples)
+  s += printExamples(p.examples, fence)
   s += printSince(p.since)
   s += CRLF
   return s
@@ -133,16 +138,16 @@ function printProperty(p: Property): string {
 /**
  * @since 0.4.0
  */
-export function printClass(c: Class): string {
+export function printClass(c: Class, fence: Fence): string {
   let s = h2(handleTitle(c.name, c.deprecated) + ' (class)')
   s += printDescription(c.description)
   s += printSignature(c.signature)
-  s += printExamples(c.examples)
+  s += printExamples(c.examples, fence)
   s += printSince(c.since)
   s += CRLF
-  s += c.staticMethods.map(printStaticMethod).join(CRLF)
-  s += c.methods.map(printMethod).join(CRLF)
-  s += c.properties.map(printProperty).join(CRLF)
+  s += c.staticMethods.map(m => printStaticMethod(m, fence)).join(CRLF)
+  s += c.methods.map(m => printMethod(m, fence)).join(CRLF)
+  s += c.properties.map(p => printProperty(p, fence)).join(CRLF)
   s += CRLF
   return s
 }
@@ -165,7 +170,7 @@ function printDescription(description: O.Option<string>): string {
   )
 }
 
-function printModuleDescription(m: Module): string {
+function printModuleDescription(m: Module, fence: Fence): string {
   return pipe(
     m.documentation,
     O.fold(
@@ -174,7 +179,7 @@ function printModuleDescription(m: Module): string {
         let s = h2(handleTitle(m.name, doc.deprecated) + ' overview')
         s += CRLF
         s += printDescription(doc.description)
-        s += printExamples(doc.examples)
+        s += printExamples(doc.examples, fence)
         s += printSince(doc.since)
         s += CRLF
         return s
@@ -186,7 +191,7 @@ function printModuleDescription(m: Module): string {
 /**
  * @since 0.2.0
  */
-export function printExamples(examples: Array<string>): string {
+export function printExamples(examples: Array<string>, fence: Fence): string {
   // HERE use tsx or ts fence
   if (examples.length === 0) {
     return ''
@@ -195,7 +200,7 @@ export function printExamples(examples: Array<string>): string {
     CRLF +
     examples
       .map(code => {
-        return bold('Example') + CRLF + ts(code)
+        return bold('Example') + CRLF + fence(code)
       })
       .join(CRLF)
   )
@@ -222,20 +227,20 @@ function printHeader(title: string, order: number): string {
 
 type Item = Interface | TypeAlias | Function | Class | Constant | Export
 
-function printItem(item: Item): string {
+function printItem(item: Item, fence: Fence): string {
   switch (item._tag) {
     case 'Class':
-      return printClass(item)
+      return printClass(item, fence)
     case 'Constant':
-      return printConstant(item)
+      return printConstant(item, fence)
     case 'Export':
-      return printExport(item)
+      return printExport(item, fence)
     case 'Function':
-      return printFunction(item)
+      return printFunction(item, fence)
     case 'Interface':
-      return printInterface(item)
+      return printInterface(item, fence)
     case 'TypeAlias':
-      return printTypeAlias(item)
+      return printTypeAlias(item, fence)
   }
 }
 
@@ -244,6 +249,7 @@ function printItem(item: Item): string {
  */
 export function printModule(module: Module, order: number): string {
   const header = printHeader(module.path.slice(1).join('/'), order)
+  const fence = isTsx(module.path.join('/')) ? tsx : ts
   const items = [
     ...module.interfaces,
     ...module.typeAliases,
@@ -269,7 +275,7 @@ export function printModule(module: Module, order: number): string {
         h1(category) +
         CRLF +
         items
-          .map(printItem)
+          .map(i => printItem(i, fence))
           .sort()
           .join('')
     )
@@ -279,7 +285,7 @@ export function printModule(module: Module, order: number): string {
 
   const result =
     header +
-    printModuleDescription(module) +
+    printModuleDescription(module, fence) +
     CRLF +
     '---' +
     CRLF +
