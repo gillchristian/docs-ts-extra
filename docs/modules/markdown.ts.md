@@ -116,3 +116,5 @@ Added in v0.5.0
 ```ts
 export declare const ts: Fence
 ```
+
+Added in v0.6.0

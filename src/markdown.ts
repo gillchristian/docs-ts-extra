@@ -21,6 +21,9 @@ const h1 = (title: string) => `# ${title}`
 const h2 = (title: string) => `## ${title}`
 const h3 = (title: string) => `### ${title}`
 const makeFence = (language: string): Fence => code => '```' + language + '\n' + code + '\n' + '```'
+/**
+ * @since 0.6.0
+ */
 export const ts = makeFence('ts')
 const tsx = makeFence('tsx')
 const bold = (code: string) => '**' + code + '**'
