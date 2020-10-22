@@ -2,40 +2,30 @@
  * @since 0.6.0
  */
 import * as t from 'io-ts'
+import { fromNullable } from 'io-ts-types/lib/fromNullable'
+import { NonEmptyString } from 'io-ts-types/lib/NonEmptyString'
+
+const TemplateType = t.keyof({ default: null, docusaurus: null })
 
 /**
  * @since 0.6.0
  */
-export const PartialConfig = t.partial({
-  strict: t.boolean,
-  outDir: t.string,
-  rootDir: t.string
-})
+export const Config = fromNullable(
+  t.interface({
+    template: fromNullable(TemplateType, 'default'),
+    strict: fromNullable(t.boolean, false),
+    outDir: fromNullable(NonEmptyString, 'docs' as NonEmptyString),
+    rootDir: fromNullable(NonEmptyString, 'src' as NonEmptyString)
+  }),
+  {
+    template: 'default',
+    strict: true,
+    outDir: 'docs' as NonEmptyString,
+    rootDir: 'src' as NonEmptyString
+  }
+)
 
 /**
  * @since 0.6.0
  */
-export interface PartialConfig extends t.TypeOf<typeof PartialConfig> {}
-
-/**
- * @since 0.6.0
- */
-export interface Config {
-  strict: boolean
-  outDir: string
-  rootDir: string
-}
-
-/**
- * @since 0.6.0
- */
-export const mergeConfig = (partial: PartialConfig, config: Config): Config => ({
-  strict: partial.strict === undefined ? config.strict : partial.strict,
-  outDir: partial.outDir === undefined ? config.outDir : partial.outDir,
-  rootDir: partial.rootDir === undefined ? config.rootDir : partial.rootDir
-})
-
-/**
- * @since 0.6.0
- */
-export const defaultConfig: Config = { strict: true, outDir: 'docs', rootDir: 'src' }
+export interface Config extends t.TypeOf<typeof Config> {}

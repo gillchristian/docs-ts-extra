@@ -1,6 +1,6 @@
 {
   "name": "docs-ts-extra",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Documentation tool for TypeScript packages",
   "files": [
     "lib"
@@ -39,6 +39,7 @@
     "glob": "^7.1.3",
     "io-ts": "^2.2.9",
     "io-ts-reporters": "^1.2.2",
+    "io-ts-types": "^0.5.11",
     "markdown-toc": "^1.2.0",
     "rimraf": "^2.6.3",
     "ts-morph": "^5.0.0",
@@ -67,7 +68,7 @@
   "tags": [],
   "keywords": [],
   "docsts": {
-    "strict": false,
+    "strict": true,
     "outDir": "docs",
     "rootDir": "src"
   }
