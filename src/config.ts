@@ -3,22 +3,25 @@
  */
 import * as t from 'io-ts'
 import { fromNullable } from 'io-ts-types/lib/fromNullable'
+import { NonEmptyString } from 'io-ts-types/lib/NonEmptyString'
+
+const TemplateType = t.keyof({ default: null, docusaurus: null })
 
 /**
  * @since 0.6.0
  */
 export const Config = fromNullable(
   t.interface({
-    template: fromNullable(t.keyof({ default: null, docusaurus: null }), 'default'),
+    template: fromNullable(TemplateType, 'default'),
     strict: fromNullable(t.boolean, false),
-    outDir: fromNullable(t.string, 'docs'),
-    rootDir: fromNullable(t.string, 'src')
+    outDir: fromNullable(NonEmptyString, 'docs' as NonEmptyString),
+    rootDir: fromNullable(NonEmptyString, 'src' as NonEmptyString)
   }),
   {
     template: 'default',
     strict: true,
-    outDir: 'docs',
-    rootDir: 'src'
+    outDir: 'docs' as NonEmptyString,
+    rootDir: 'src' as NonEmptyString
   }
 )
 
