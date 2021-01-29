@@ -3,6 +3,7 @@
   "version": "0.7.0",
   "description": "Documentation tool for TypeScript packages",
   "files": [
+    "bin",
     "lib"
   ],
   "main": "lib/index.js",
