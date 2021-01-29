@@ -1,6 +1,6 @@
 {
   "name": "docs-ts-extra",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Documentation tool for TypeScript packages",
   "files": [
     "bin",
