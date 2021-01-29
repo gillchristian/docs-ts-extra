@@ -18,7 +18,7 @@ function getTestSourceFile(source: string): ast.SourceFile {
 const testEnv: P.Env = {
   path: ['test'],
   sourceFile: getTestSourceFile(''),
-  config: defaultConfig
+  config: defaultConfig,
 }
 
 // TODO tests on non-strict mode !!!
@@ -27,29 +27,29 @@ describe('parser', () => {
   it('parseContent', () => {
     assert.deepStrictEqual(P.parseComment(''), {
       description: O.none,
-      tags: {}
+      tags: {},
     })
     assert.deepStrictEqual(P.parseComment('/** description */'), {
       description: O.some('description'),
-      tags: {}
+      tags: {},
     })
     assert.deepStrictEqual(P.parseComment('/** description\n * @since 1.0.0\n */'), {
       description: O.some('description'),
       tags: {
-        since: [O.some('1.0.0')]
-      }
+        since: [O.some('1.0.0')],
+      },
     })
     assert.deepStrictEqual(P.parseComment('/** description\n * @deprecated\n */'), {
       description: O.some('description'),
       tags: {
-        deprecated: [O.none]
-      }
+        deprecated: [O.none],
+      },
     })
     assert.deepStrictEqual(P.parseComment('/** description\n * @category instance\n */'), {
       description: O.some('description'),
       tags: {
-        category: [O.some('instance')]
-      }
+        category: [O.some('instance')],
+      },
     })
   })
 
@@ -61,7 +61,7 @@ describe('parser', () => {
         deprecated: false,
         description: O.some('description'),
         examples: [],
-        since: O.some('1.0.0')
+        since: O.some('1.0.0'),
       })
     )
   })
@@ -115,8 +115,8 @@ export interface A {}`
           signature: 'export interface A {}',
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -210,8 +210,8 @@ export const f = (a: number, b: number): { [key: string]: number } => ({ a, b })
           signatures: ['export declare const f: (a: number, b: number) => { [key: string]: number; }'],
           since: O.some('1.0.0'),
           examples: ['assert.deeStrictEqual(f(1, 2), { a: 1, b: 2})', 'assert.deeStrictEqual(f(3, 4), { a: 3, b: 4})'],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -235,8 +235,8 @@ export function f(a: number, b: number): { [key: string]: number } { return { a,
           signatures: ['export declare function f(a: number, b: number): { [key: string]: number }'],
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -262,8 +262,8 @@ export function f(a: number, b: number): { [key: string]: number } { return { a,
           signatures: ['export declare function f(a: number, b: number): { [key: string]: number }'],
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -290,12 +290,12 @@ export function f(a: any, b: any): { [key: string]: number } { return { a, b } }
           name: 'f',
           signatures: [
             'export declare function f(a: int, b: int): { [key: string]: number }',
-            'export declare function f(a: number, b: number): { [key: string]: number }'
+            'export declare function f(a: number, b: number): { [key: string]: number }',
           ],
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -322,8 +322,8 @@ export type Option<A> = None<A> | Some<A>`
           signature: 'export type Option<A> = None<A> | Some<A>',
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -350,8 +350,8 @@ export const s: string = ''`
           signature: 'export declare const s: string',
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -374,8 +374,8 @@ export const left: <E = never, A = never>(l: E) => string = T.left`
           signature: 'export declare const left: <E = never, A = never>(l: E) => string',
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -398,8 +398,8 @@ export const empty = new Map<never, never>()`
           signature: 'export declare const empty: Map<never, never>',
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -430,8 +430,8 @@ export const taskSeq: typeof task = {
           signature: 'export declare const taskSeq: { a: number; }',
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        }
+          category: O.none,
+        },
       ])
     )
   })
@@ -479,7 +479,7 @@ describe('parseClasses', () => {
           [],
           [],
           []
-        )
+        ),
       ])
     )
   })
@@ -503,8 +503,8 @@ export class C { constructor() {} }`)
           signature: 'export declare class C { constructor() }',
           since: O.some('1.0.0'),
           staticMethods: [],
-          properties: []
-        }
+          properties: [],
+        },
       ])
     )
   })
@@ -561,8 +561,8 @@ export class Test {
               signatures: ['g(a: number, b: number): { [key: string]: number }'],
               since: O.some('1.1.0'),
               examples: [],
-              category: O.none
-            }
+              category: O.none,
+            },
           ],
           staticMethods: [
             {
@@ -572,8 +572,8 @@ export class Test {
               signatures: ['static f(): void'],
               since: O.some('1.1.0'),
               examples: [],
-              category: O.none
-            }
+              category: O.none,
+            },
           ],
           properties: [
             {
@@ -583,10 +583,10 @@ export class Test {
               category: O.none,
               name: 'a',
               signature: 'readonly a: string',
-              since: O.some('1.1.0')
-            }
-          ]
-        }
+              since: O.some('1.1.0'),
+            },
+          ],
+        },
       ])
     )
   })
@@ -640,8 +640,8 @@ export class Test<A> {
               signatures: ['map(f: (a: number) => number): Test', 'map(f: (a: string) => string): Test'],
               since: O.some('1.1.0'),
               examples: [],
-              category: O.none
-            }
+              category: O.none,
+            },
           ],
           staticMethods: [
             {
@@ -651,11 +651,11 @@ export class Test<A> {
               signatures: ['static f(x: number): number', 'static f(x: string): string'],
               since: O.some('1.1.0'),
               examples: [],
-              category: O.none
-            }
+              category: O.none,
+            },
           ],
-          properties: []
-        }
+          properties: [],
+        },
       ])
     )
   })
@@ -687,8 +687,8 @@ export const a: number = 1
           deprecated: true,
           since: O.some('1.0.0'),
           examples: [],
-          category: O.none
-        })
+          category: O.none,
+        }),
       })
     )
   })
@@ -725,8 +725,8 @@ describe('parseExports', () => {
           category: O.none,
           name: 'b',
           signature: 'export declare const b: 1',
-          since: O.some('1.0.0')
-        }
+          since: O.some('1.0.0'),
+        },
       ])
     )
   })
@@ -756,7 +756,7 @@ describe('parseExports', () => {
           category: O.none,
           name: 'a',
           signature: 'export declare const a: any',
-          since: O.some('1.0.0')
+          since: O.some('1.0.0'),
         },
         {
           _tag: 'Export',
@@ -766,8 +766,8 @@ describe('parseExports', () => {
           category: O.none,
           name: 'b',
           signature: 'export declare const b: any',
-          since: O.some('2.0.0')
-        }
+          since: O.some('2.0.0'),
+        },
       ])
     )
   })
@@ -804,8 +804,8 @@ export {
           category: O.none,
           name: 'b',
           signature: 'export declare const b: 1',
-          since: O.some('1.0.0')
-        }
+          since: O.some('1.0.0'),
+        },
       ])
     )
   })

@@ -9,7 +9,7 @@ import * as t from 'io-ts'
 export const PartialConfig = t.partial({
   strict: t.boolean,
   outDir: t.string,
-  rootDir: t.string
+  rootDir: t.string,
 })
 
 /**
@@ -32,7 +32,7 @@ export interface Config {
 export const mergeConfig = (partial: PartialConfig, config: Config): Config => ({
   strict: partial.strict === undefined ? config.strict : partial.strict,
   outDir: partial.outDir === undefined ? config.outDir : partial.outDir,
-  rootDir: partial.rootDir === undefined ? config.rootDir : partial.rootDir
+  rootDir: partial.rootDir === undefined ? config.rootDir : partial.rootDir,
 })
 
 /**

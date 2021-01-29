@@ -256,5 +256,5 @@ export const ordModule: Ord<Module> = pipe(
 export const isModuleDeprecated = (module: Module) =>
   pipe(
     module.documentation,
-    O.exists(doc => doc.deprecated)
+    O.exists((doc) => doc.deprecated)
   )

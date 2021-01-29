@@ -3,6 +3,7 @@
  */
 import * as path from 'path'
 import { spawnSync } from 'child_process'
+
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { fold } from 'fp-ts/lib/Monoid'
@@ -84,7 +85,7 @@ function file(path: string, content: string, overwrite: boolean): File {
   return {
     path,
     content,
-    overwrite
+    overwrite,
   }
 }
 
@@ -92,7 +93,7 @@ function readFile(path: string): Effect<File> {
   return ({ C }) =>
     pipe(
       C.readFile(path),
-      TE.map(content => file(path, content, false))
+      TE.map((content) => file(path, content, false))
     )
 }
 
@@ -116,7 +117,7 @@ function writeFile(file: File): Effect<void> {
 
     return pipe(
       C.existsFile(file.path),
-      TE.chain(exists => (exists ? (file.overwrite ? overwrite : skip) : write))
+      TE.chain((exists) => (exists ? (file.overwrite ? overwrite : skip) : write))
     )
   }
 }
@@ -133,8 +134,8 @@ const rootPattern = (rootDir: string) => path.join(rootDir, '**', '*.+(ts|tsx)')
 const getSrcPaths: Effect<Array<string>> = ({ C, Env }) =>
   pipe(
     C.getFilenames(rootPattern(Env.config.rootDir)),
-    TE.map(paths => A.array.map(paths, path.normalize)),
-    TE.chainFirst(paths => C.info(`${paths.length} modules found`))
+    TE.map((paths) => A.array.map(paths, path.normalize)),
+    TE.chainFirst((paths) => C.info(`${paths.length} modules found`))
   )
 
 const readSources: Effect<Array<File>> = pipe(getSrcPaths, RTE.chain(readFiles))
@@ -150,7 +151,7 @@ function parseFiles(files: Array<File>): Effect<Array<Module>> {
 const foldFiles = fold(A.getMonoid<File>())
 
 function getExampleFiles(outDir: string, modules: Array<Module>): Array<File> {
-  return A.array.chain(modules, module => {
+  return A.array.chain(modules, (module) => {
     const prefix = module.path.join('-')
     const extension = isTsx(prefix) ? '.tsx' : '.ts'
 
@@ -167,10 +168,10 @@ function getExampleFiles(outDir: string, modules: Array<Module>): Array<File> {
       module.documentation,
       O.fold(() => [], getDocumentableExamples)
     )
-    const methods = A.array.chain(module.classes, c =>
+    const methods = A.array.chain(module.classes, (c) =>
       foldFiles([
         A.array.chain(c.methods, getDocumentableExamples),
-        A.array.chain(c.staticMethods, getDocumentableExamples)
+        A.array.chain(c.staticMethods, getDocumentableExamples),
       ])
     )
     const interfaces = A.array.chain(module.interfaces, getDocumentableExamples)
@@ -208,7 +209,7 @@ function handleImports(files: Array<File>, projectName: string, rootDir: string)
       .replace(module, `from '../../${rootDir}/`)
       .replace(other, `from '../../${rootDir}/`)
   }
-  return files.map(f => {
+  return files.map((f) => {
     const handleProjectImports = replaceProjectName(f.content)
     const handleAssert = addAssertImport(handleProjectImports)
     const content = isTsx(f.path) ? addReactImport(handleAssert) : handleAssert
@@ -217,7 +218,7 @@ function handleImports(files: Array<File>, projectName: string, rootDir: string)
 }
 
 function getExampleIndex(outDir: string, examples: Array<File>): File {
-  const content = examples.map(example => `import './${path.basename(example.path)}'`).join('\n') + '\n'
+  const content = examples.map((example) => `import './${path.basename(example.path)}'`).join('\n') + '\n'
   return file(path.join(outDir, 'examples', 'index.ts'), content, true)
 }
 
@@ -235,7 +236,7 @@ const spawnTsNode: Effect<void> = ({ C, Env }) =>
     TE.chain(() =>
       TE.fromIOEither(() => {
         const { status } = spawnSync('ts-node', [path.join(Env.config.outDir, 'examples', 'index.ts')], {
-          stdio: 'inherit'
+          stdio: 'inherit',
         })
         return status === 0 ? E.right(undefined) : E.left('Type checking error')
       })
@@ -259,7 +260,7 @@ function typecheckExamples(modules: Array<Module>): Effect<void> {
     RTE.asks(({ Env }: Context) =>
       handleImports(getExampleFiles(Env.config.outDir, modules), Env.name, Env.config.rootDir)
     ),
-    RTE.chain(examples =>
+    RTE.chain((examples) =>
       examples.length === 0
         ? cleanExamples
         : pipe(
@@ -321,17 +322,17 @@ function getMarkdownOutpuPath(outDir: string, module: Module): string {
 }
 
 function getModuleMarkdownFiles(outDir: string, modules: Array<Module>): Array<File> {
-  return modules.map(module =>
+  return modules.map((module) =>
     file(getMarkdownOutpuPath(outDir, module), markdown.printModule(module, counter++), true)
   )
 }
 
 function getMarkdownFiles(env: Env): (modules: Array<Module>) => Array<File> {
-  return modules => [
+  return (modules) => [
     home(env.config.outDir),
     modulesIndex(env.config.outDir),
     getConfigYML(env),
-    ...getModuleMarkdownFiles(env.config.outDir, modules)
+    ...getModuleMarkdownFiles(env.config.outDir, modules),
   ]
 }
 
@@ -356,7 +357,7 @@ function writeMarkdownFiles(files: Array<File>): Effect<void> {
  */
 export const main: Effect<void> = pipe(
   RTE.ask<Context>(),
-  RTE.chain(ctx =>
+  RTE.chain((ctx) =>
     pipe(
       readSources,
       RTE.chain(parseFiles),

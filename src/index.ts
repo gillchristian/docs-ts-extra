@@ -2,10 +2,12 @@
  * @since 0.2.0
  */
 import * as path from 'path'
+
 import * as fs from 'fs-extra'
 import chalk from 'chalk'
 import * as glob from 'glob'
 import * as rimraf from 'rimraf'
+
 import { log } from 'fp-ts/lib/Console'
 import * as IO from 'fp-ts/lib/IO'
 import { pipe } from 'fp-ts/lib/pipeable'
@@ -15,6 +17,7 @@ import * as TE from 'fp-ts/lib/TaskEither'
 import * as RTE from 'fp-ts/lib/ReaderTaskEither'
 import { sequenceS } from 'fp-ts/lib/Apply'
 import { formatValidationErrors } from 'io-ts-reporters'
+
 import * as core from './core'
 import { Config, PartialConfig, defaultConfig, mergeConfig } from './config'
 
@@ -26,10 +29,10 @@ interface PackageJSON {
   readonly docsts: unknown
 }
 
-const getPackageJSON: Effect<PackageJSON> = C =>
+const getPackageJSON: Effect<PackageJSON> = (C) =>
   pipe(
     C.readFile(path.join(process.cwd(), 'package.json')),
-    TE.chain(s => {
+    TE.chain((s) => {
       const json = JSON.parse(s)
       const name = json.name
 
@@ -38,7 +41,7 @@ const getPackageJSON: Effect<PackageJSON> = C =>
         TE.map(() => ({
           name,
           homepage: json.homepage,
-          docsts: json.docsts
+          docsts: json.docsts,
         }))
       )
     })
@@ -49,12 +52,12 @@ function validateConfig({ docsts = {} }: PackageJSON, def: Config): E.Either<str
     docsts,
     PartialConfig.decode,
     E.mapLeft(formatValidationErrors),
-    E.mapLeft(errors => 'Failed to decode "docsts" config:\n' + errors.join('\n')),
-    E.map(validConfig => mergeConfig(validConfig, def)),
-    E.map(config => ({
+    E.mapLeft((errors) => 'Failed to decode "docsts" config:\n' + errors.join('\n')),
+    E.map((validConfig) => mergeConfig(validConfig, def)),
+    E.map((config) => ({
       ...config,
       rootDir: path.normalize(config.rootDir).replace(/\/$/, ''),
-      outDir: path.normalize(config.outDir).replace(/\/$/, '')
+      outDir: path.normalize(config.outDir).replace(/\/$/, ''),
     }))
   )
 }
@@ -65,11 +68,11 @@ function checkHomepage(pkg: PackageJSON): E.Either<string, string> {
 
 const getContext: Effect<core.Env> = pipe(
   getPackageJSON,
-  RTE.chainEitherK(pkg =>
+  RTE.chainEitherK((pkg) =>
     sequenceS(E.either)({
       config: validateConfig(pkg, defaultConfig),
       name: E.right(pkg.name),
-      homepage: checkHomepage(pkg)
+      homepage: checkHomepage(pkg),
     })
   )
 )
@@ -82,7 +85,7 @@ const capabilities: core.Capabilities = {
   clean: (pattern: string) => TE.rightIO(() => rimraf.sync(pattern)),
   info: (message: string) => TE.rightIO(log(chalk.bold.magenta(message))),
   log: (message: string) => TE.rightIO(log(chalk.cyan(message))),
-  debug: (message: string) => TE.rightIO(log(chalk.gray(message)))
+  debug: (message: string) => TE.rightIO(log(chalk.gray(message))),
 }
 
 const exit = (code: 0 | 1): IO.IO<void> => () => process.exit(code)
@@ -102,12 +105,12 @@ const onRight: T.Task<void> = T.fromIO(log(chalk.bold.green('Docs generation suc
  */
 export const main: T.Task<void> = pipe(
   getContext,
-  RTE.chain(env =>
+  RTE.chain((env) =>
     pipe(
       core.main,
-      RTE.local(C => ({ Env: env, C }))
+      RTE.local((C) => ({ Env: env, C }))
     )
   ),
-  runReader => runReader(capabilities),
+  (runReader) => runReader(capabilities),
   TE.fold(onLeft, () => onRight)
 )

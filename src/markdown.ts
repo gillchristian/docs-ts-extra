@@ -3,8 +3,8 @@
  *
  * @since 0.2.0
  */
-
 import * as prettier from 'prettier'
+
 import * as O from 'fp-ts/lib/Option'
 import { Class, Function, Interface, Method, TypeAlias, Constant, Module, Export, Property } from './domain'
 import { pipe } from 'fp-ts/lib/pipeable'
@@ -20,7 +20,7 @@ const CRLF = '\n\n'
 const h1 = (title: string) => `# ${title}`
 const h2 = (title: string) => `## ${title}`
 const h3 = (title: string) => `### ${title}`
-const makeFence = (language: string): Fence => code => '```' + language + '\n' + code + '\n' + '```'
+const makeFence = (language: string): Fence => (code) => '```' + language + '\n' + code + '\n' + '```'
 export const ts = makeFence('ts')
 const tsx = makeFence('tsx')
 const bold = (code: string) => '**' + code + '**'
@@ -32,7 +32,7 @@ const prettierOptions: prettier.Options = {
   parser: 'markdown',
   semi: false,
   singleQuote: true,
-  printWidth: 120
+  printWidth: 120,
 }
 
 function handleTitle(s: string, deprecated: boolean): string {
@@ -145,9 +145,9 @@ export function printClass(c: Class, fence: Fence): string {
   s += printExamples(c.examples, fence)
   s += printSince(c.since)
   s += CRLF
-  s += c.staticMethods.map(m => printStaticMethod(m, fence)).join(CRLF)
-  s += c.methods.map(m => printMethod(m, fence)).join(CRLF)
-  s += c.properties.map(p => printProperty(p, fence)).join(CRLF)
+  s += c.staticMethods.map((m) => printStaticMethod(m, fence)).join(CRLF)
+  s += c.methods.map((m) => printMethod(m, fence)).join(CRLF)
+  s += c.properties.map((p) => printProperty(p, fence)).join(CRLF)
   s += CRLF
   return s
 }
@@ -165,7 +165,7 @@ function printDescription(description: O.Option<string>): string {
     description,
     O.fold(
       () => '',
-      s => CRLF + s
+      (s) => CRLF + s
     )
   )
 }
@@ -175,7 +175,7 @@ function printModuleDescription(m: Module, fence: Fence): string {
     m.documentation,
     O.fold(
       () => h2(handleTitle(m.name, false) + ' overview') + CRLF,
-      doc => {
+      (doc) => {
         let s = h2(handleTitle(m.name, doc.deprecated) + ' overview')
         s += CRLF
         s += printDescription(doc.description)
@@ -199,7 +199,7 @@ export function printExamples(examples: Array<string>, fence: Fence): string {
   return (
     CRLF +
     examples
-      .map(code => {
+      .map((code) => {
         return bold('Example') + CRLF + fence(code)
       })
       .join(CRLF)
@@ -211,7 +211,7 @@ function printSince(since: O.Option<string>): string {
     since,
     O.fold(
       () => '',
-      since => CRLF + `Added in v${since}`
+      (since) => CRLF + `Added in v${since}`
     )
   )
 }
@@ -256,12 +256,12 @@ export function printModule(module: Module, order: number): string {
     ...module.classes,
     ...module.constants,
     ...module.functions,
-    ...module.exports
+    ...module.exports,
   ]
   const DEFAULT_CATEGORY = 'utils'
   const groups = pipe(
     items,
-    NEA.groupBy(item =>
+    NEA.groupBy((item) =>
       pipe(
         item.category,
         O.getOrElse(() => DEFAULT_CATEGORY)
@@ -275,7 +275,7 @@ export function printModule(module: Module, order: number): string {
         h1(category) +
         CRLF +
         items
-          .map(i => printItem(i, fence))
+          .map((i) => printItem(i, fence))
           .sort()
           .join('')
     )
